@@ -1,0 +1,3 @@
+// Keep personal signing preferences outside the generated/public project.
+CODE_SIGN_STYLE = Automatic
+#include? "Signing.local.xcconfig"

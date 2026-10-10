@@ -1,0 +1,10 @@
+<resources>
+    <item type="id" name="game_surface"/><item type="id" name="sudoku_board"/>
+    <item type="id" name="game_menu"/><item type="id" name="undo"/>
+    <item type="id" name="erase"/><item type="id" name="notes"/>
+    <item type="id" name="number_1"/><item type="id" name="number_2"/>
+    <item type="id" name="number_3"/><item type="id" name="number_4"/>
+    <item type="id" name="number_5"/><item type="id" name="number_6"/>
+    <item type="id" name="number_7"/><item type="id" name="number_8"/>
+    <item type="id" name="number_9"/>
+</resources>

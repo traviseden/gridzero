@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+Signing.local.xcconfig
+android/.sdk/
+android/.gradle/
+android/local.properties
+android/**/build/
+android/*.keystore
+*.ipa
+*.xcarchive
