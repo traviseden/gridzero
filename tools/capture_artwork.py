@@ -29,7 +29,7 @@ try:
         time.sleep(1)
         original = f"build/artwork-{appearance}.png"
         run("xcrun", "simctl", "io", device, "screenshot", original)
-        run("sips", "--resampleWidth", "720", original, "--out", f"site/assets/game-{appearance}.png")
+        run("sips", "--resampleWidth", "720", original, "--out", f"site/public/assets/game-{appearance}.png")
 finally:
     subprocess.run(["xcrun", "simctl", "shutdown", device], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["xcrun", "simctl", "delete", device], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

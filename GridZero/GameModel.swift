@@ -9,7 +9,7 @@ struct Preferences: Codable {
     var lightAt = 7 * 60
     var darkAt = 19 * 60
     var source: PuzzleSource = .collection
-    var difficulty: Difficulty = .easy
+    var difficulty: Difficulty = .medium
     var mode: PlayMode = .challenge
     var strikeLimit = 3
     var customEmpty = 45
@@ -107,7 +107,7 @@ final class GameModel {
             showCompletion = false; showStrikeOut = false
             played.append(puzzle.id); played = Array(played.suffix(500))
             preferences.difficulty = difficulty; preferences.mode = mode
-            preferences.source = source; preferences.customEmpty = empty
+            preferences.source = difficulty == .custom ? .generated : source; preferences.customEmpty = empty
             lastTick = nil
             generating = false; worker = nil; requestID = nil
             save()

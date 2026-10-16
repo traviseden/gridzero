@@ -1,0 +1,113 @@
+---
+import '../styles/play.css';
+const levels = ['easy', 'medium', 'hard', 'expert', 'custom'];
+---
+<!doctype html>
+<html lang="en" data-theme="ink">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf9f5" />
+    <meta name="description" content="Play GridZero Sudoku. Challenge or Classic, pencil notes, 8,000 puzzles, and zero distractions. Free, private, and offline-ready." />
+    <link rel="canonical" href="https://gridzero.win/play/" />
+    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <title>Play Sudoku — GridZero</title>
+  </head>
+  <body>
+    <main id="main" class="game-app" aria-label="GridZero Sudoku">
+      <header class="game-header">
+        <a href="/" class="game-wordmark">GridZero</a>
+        <button id="menu-open" class="round-button" aria-label="Game menu" aria-haspopup="dialog">•••</button>
+      </header>
+      <div class="metadata">
+        <div><strong id="difficulty">Medium</strong><span id="mode">Challenge</span></div>
+        <div class="game-metrics"><span id="timer" hidden>0:00</span><span id="strikes" aria-label="0 of 3 strikes"></span></div>
+      </div>
+      <div id="board" class="board" role="group" aria-label="Sudoku board. Use arrow keys to select cells and number keys to enter.">
+        {Array.from({ length: 81 }, (_, i) => <button class:list={['cell', { 'box-right': i % 9 === 2 || i % 9 === 5, 'box-bottom': Math.floor(i / 9) === 2 || Math.floor(i / 9) === 5 }]} data-cell={i} tabindex={i === 0 ? 0 : -1} aria-label={`Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}, empty`}><span class="value"></span><span class="notes" aria-hidden="true">{Array.from({ length: 9 }, (_, d) => <span data-note={d + 1}></span>)}</span></button>)}
+      </div>
+      <div class="tools" aria-label="Board tools">
+        <button id="undo" disabled><span aria-hidden="true">↶</span>Undo</button>
+        <button id="erase" disabled><span aria-hidden="true">⌫</span>Erase</button>
+        <button id="notes" aria-pressed="false"><span aria-hidden="true">✎</span>Notes</button>
+      </div>
+      <div class="keypad" aria-label="Number keypad">
+        <div class="key-row">{[1, 3, 5, 7, 9].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
+        <div class="key-row even">{[2, 4, 6, 8].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
+      </div>
+      <div class="game-status"><p id="status" role="status" aria-live="polite">Preparing your puzzle…</p><p id="save-status" role="status"></p></div>
+    </main>
+    <noscript><div class="no-script">The browser game needs JavaScript. No data leaves your device. <a href="/">Back to GridZero</a>.</div></noscript>
+    <dialog id="menu-dialog" aria-labelledby="menu-title">
+      <header class="dialog-header"><h2 id="menu-title">Game menu</h2><button data-close aria-label="Close game menu">Done</button></header>
+      <div class="menu-actions">
+        <button data-action="new">New Puzzle <span>＋</span></button>
+        <button data-action="settings">Settings <span>☷</span></button>
+        <button data-action="check" hidden>Check Board <span>✓</span></button>
+        <button data-action="fill" hidden>Fill Notes <span>✎</span></button>
+        <button data-action="redo">Redo <span>↷</span></button>
+        <button data-action="restart">Restart Puzzle <span>↻</span></button>
+      </div>
+      <p class="hint">Keyboard: 1–9 to enter · N for notes · arrows to move · ⌘/Ctrl+Z to undo.</p>
+      <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/">Home</a></nav>
+    </dialog>
+    <dialog id="new-dialog" aria-labelledby="new-title">
+      <header class="dialog-header"><h2 id="new-title">New puzzle</h2><button data-close>Done</button></header>
+      <form id="new-form">
+        <fieldset><legend>Your kind of puzzle</legend>
+          <label>Difficulty<select name="difficulty">{levels.map(l => <option value={l}>{l[0].toUpperCase() + l.slice(1)}</option>)}</select></label>
+          <label id="custom-field" hidden>Empty squares <output id="empty-count">45</output><input name="empty" type="range" min="20" max="60" step="1" value="45" /></label>
+          <p class="hint" id="difficulty-help">Collection puzzles use published difficulty ratings. Generated puzzles are graded by the deductions needed to solve them.</p>
+        </fieldset>
+        <fieldset><legend>How you play</legend>
+          <label>Mode<select name="mode"><option value="challenge">Challenge</option><option value="classic">Classic</option></select></label>
+          <p class="hint" id="mode-help"></p>
+          <label>Puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
+          <p class="hint" id="source-help">8,000 rated, uniqueness-checked puzzles. No downloads needed.</p>
+        </fieldset>
+        <p id="generation-error" role="alert" class="error"></p>
+        <button class="primary" id="start-puzzle" type="submit">Start Puzzle</button>
+        <p class="hint">Your current puzzle is replaced only when the new one is ready.</p>
+      </form>
+    </dialog>
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <header class="dialog-header"><h2 id="settings-title">Settings</h2><button data-close>Done</button></header>
+      <form id="settings-form">
+        <fieldset><legend>Make it yours</legend>
+          <div class="theme-picker" role="group" aria-label="Color theme">{['ink', 'moss', 'clay'].map(t => <button type="button" data-theme-choice={t} aria-pressed={t === 'ink'}><span class={`swatch ${t}`}></span>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
+          <label>Appearance<select name="appearance" aria-label="Appearance"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option><option value="scheduled">Scheduled</option></select></label>
+          <div id="schedule" hidden><label>Light at<input type="time" name="lightAt" value="07:00" /></label><label>Dark at<input type="time" name="darkAt" value="19:00" /></label></div>
+          <p class="hint">System follows your device. Scheduled uses your local clock, never your location.</p>
+        </fieldset>
+        <fieldset><legend>New puzzles</legend>
+          <label>Default puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
+          <label>Challenge strike limit<select name="strikeLimit" aria-label="Challenge strike limit"><option value="3">3 strikes</option><option value="5">5 strikes</option><option value="10">10 strikes</option><option value="0">Unlimited</option></select></label>
+          <p class="hint">Strike limits apply to new games. Your current game's rules stay consistent.</p>
+        </fieldset>
+        <fieldset><legend>Optional assistance</legend>
+          <label class="toggle">Enable Fill Notes<input name="allowAutofill" type="checkbox" /></label>
+          <label class="toggle">Automatically clean up notes<input name="cleanupNotes" type="checkbox" /></label>
+          <p class="hint">Notes are manual by default. Assistance uses only the current board, never the hidden solution. Undo restores the entire move.</p>
+        </fieldset>
+        <fieldset><legend>While you play</legend>
+          <label class="toggle">Highlight related cells<input name="highlightPeers" type="checkbox" checked /></label>
+          <label class="toggle">Highlight matching numbers<input name="highlightMatching" type="checkbox" checked /></label>
+          <label class="toggle">Show timer<input name="showTimer" type="checkbox" /></label>
+          <label class="toggle">Gentle haptics (where supported)<input name="haptics" type="checkbox" checked /></label>
+        </fieldset>
+        <p class="hint">Free, open source, and offline-ready. No ads. No tracking. No accounts. 8,000 collection puzzles courtesy of <a href="/credits/">Grant McLean / Sudoku Exchange</a>, generated with QQWing and rated with Sukaku Explainer. <a href="/assets/Puzzle-LICENSE.txt">Public domain</a>. Browser and native saves are separate.</p>
+        <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="https://github.com/traviseden/gridzero">Source</a></nav>
+      </form>
+    </dialog>
+    <dialog id="notice-dialog" aria-labelledby="notice-title">
+      <header class="dialog-header"><h2 id="notice-title"></h2></header>
+      <p id="notice-message"></p><div id="notice-actions" class="notice-actions"></div>
+    </dialog>
+    <script>
+      import '../game/app';
+    </script>
+  </body>
+</html>

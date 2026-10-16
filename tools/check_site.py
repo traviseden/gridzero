@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Static-site sanity check: local links/assets, structure, and no scripts."""
+"""Check Astro's built output: links, structure, images, and script boundaries."""
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-ROOT = Path(__file__).resolve().parents[1] / "site"
+ROOT = Path(__file__).resolve().parents[1] / "site" / "dist"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 class Check(HTMLParser):
@@ -17,7 +17,9 @@ class Check(HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         values = dict(attrs)
-        assert tag != "script", f"Scripts aren't needed: {self.file}"
+        if tag == "script":
+            assert self.file == ROOT / "play" / "index.html", f"Scripts only belong in /play: {self.file}"
+            assert values.get("src", "").startswith("/_astro/"), "Only bundled, first-party scripts are allowed"
         assert not any(key.startswith("on") for key in values), "Inline event handler"
         self.title |= tag == "title"
         self.main |= tag == "main"
@@ -29,6 +31,8 @@ class Check(HTMLParser):
             if url.scheme or url.netloc or not url.path:
                 continue
             target = ROOT / url.path.lstrip("/") if url.path.startswith("/") else self.file.parent / url.path
+            if not target.exists() and not url.path.endswith("/"):
+                target = target / "index.html"
             if target.is_dir():
                 target /= "index.html"
             assert target.is_file(), f"Broken local {key}: {self.file}: {link}"
@@ -38,9 +42,10 @@ class Check(HTMLParser):
     def handle_endtag(self, tag):
         assert self.stack and self.stack.pop() == tag, f"Unbalanced {tag}: {self.file}"
 
+assert (ROOT / "play" / "index.html").is_file(), "Run npm --prefix site run build first"
 for file in ROOT.rglob("*.html"):
     parser = Check(file)
     parser.feed(file.read_text())
     assert not parser.stack and parser.title and parser.main, f"Incomplete HTML: {file}"
     print(f"Checked {file.relative_to(ROOT)}")
-print("Static site links, images, structure, and script-free pages verified")
+print("Built site links, images, structure, and script-free informational pages verified")

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "collectionVersion": "sudoku-exchange-8000-v1",
+  "source": "Grant McLean / Sudoku Exchange puzzle bank",
+  "sourceUrl": "https://github.com/grantm/sudoku-exchange-puzzle-bank",
+  "revision": "d8c8ebaee0c08c412cfba96af1923dfa61c83317",
+  "license": "Unlicense (public domain)",
+  "generatedWith": "QQWing",
+  "ratedWith": "Sukaku Explainer",
+  "selection": "First 2000 records from each pinned upstream file; original IDs preserved",
+  "count": 8000,
+  "perDifficulty": {
+    "easy": 2000,
+    "medium": 2000,
+    "hard": 2000,
+    "expert": 2000
+  },
+  "upstreamCounts": {
+    "easy": 100000,
+    "medium": 352643,
+    "hard": 321592,
+    "expert": 119681
+  },
+  "bytes": 840000,
+  "sha256": "322af3981362ac873c3f8a9f930c47e56482f6d3aaa664309b9ffd64e796863d"
+}

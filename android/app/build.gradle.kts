@@ -1,6 +1,25 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Keep key material and passwords local. Relative storeFile paths are relative
+// to android/, not app/. No fallback to a debug key for Release builds.
+val signingFile = rootProject.file("Signing.local.properties")
+val privateSigning = Properties().apply {
+    if (signingFile.exists()) signingFile.inputStream().use { load(it) }
+}
+if (signingFile.exists()) {
+    for (key in listOf("storeFile", "storePassword", "keyAlias", "keyPassword")) {
+        require(!privateSigning.getProperty(key).isNullOrBlank()) {
+            "Missing $key in android/Signing.local.properties"
+        }
+    }
+    require(rootProject.file(privateSigning.getProperty("storeFile")).isFile) {
+        "Signing keystore not found; check storeFile in android/Signing.local.properties"
+    }
 }
 
 android {
@@ -14,13 +33,23 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
+    signingConfigs {
+        if (signingFile.exists()) {
+            create("localRelease") {
+                storeFile = rootProject.file(privateSigning.getProperty("storeFile"))
+                storePassword = privateSigning.getProperty("storePassword")
+                keyAlias = privateSigning.getProperty("keyAlias")
+                keyPassword = privateSigning.getProperty("keyPassword")
+            }
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // Local sideload builds use the developer's standard debug key.
-            // Configure a private release key before publishing a store release.
-            signingConfig = signingConfigs.getByName("debug")
+            // Without local signing, Gradle can compile an unsigned release for
+            // CI. tools/android.sh refuses to ship it to a phone.
+            if (signingFile.exists()) signingConfig = signingConfigs.getByName("localRelease")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

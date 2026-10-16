@@ -41,7 +41,7 @@ The final single-window scene configuration was smoke-tested again on iPhone 16e
 
 ## Visual review
 
-Portrait iPhone screenshots are refreshed in `site/assets/`. Large iPads use a centered, size-capped notebook in portrait and a side-by-side board / keypad in landscape.
+Portrait iPhone screenshots are refreshed in `site/public/assets/`. Large iPads use a centered, size-capped notebook in portrait and a side-by-side board / keypad in landscape.
 
 ![iPad portrait](screenshots/ipad-portrait.png)
 

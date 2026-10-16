@@ -13,7 +13,7 @@ enum class Appearance { SYSTEM, LIGHT, DARK, SCHEDULED }
 data class Settings(
     var theme: Theme = Theme.INK, var appearance: Appearance = Appearance.SYSTEM,
     var lightAt: Int = 420, var darkAt: Int = 1140,
-    var source: PuzzleSource = PuzzleSource.COLLECTION, var difficulty: Difficulty = Difficulty.EASY,
+    var source: PuzzleSource = PuzzleSource.COLLECTION, var difficulty: Difficulty = Difficulty.MEDIUM,
     var mode: PlayMode = PlayMode.CHALLENGE, var strikeLimit: Int = 3, var customEmpty: Int = 45,
     var allowAutofill: Boolean = false, var cleanupNotes: Boolean = false,
     var highlightPeers: Boolean = true, var highlightMatching: Boolean = true,

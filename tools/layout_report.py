@@ -70,7 +70,7 @@ lines.append("\nAll native runs used iOS / iPadOS 27 simulators with an iOS 26 d
              "The full matrix, window harness, raw screenshots, and XCTest result bundles remain under `build/layout-results/`. "
              "Temporary test simulators are shut down and deleted after each run.\n\n"
              "## Visual review\n\n"
-             "Portrait iPhone screenshots are refreshed in `site/assets/`. Large iPads use a centered, size-capped notebook in portrait "
+             "Portrait iPhone screenshots are refreshed in `site/public/assets/`. Large iPads use a centered, size-capped notebook in portrait "
              "and a side-by-side board / keypad in landscape.\n\n"
              "![iPad portrait](screenshots/ipad-portrait.png)\n\n"
              "![iPad landscape](screenshots/ipad-landscape.png)\n")

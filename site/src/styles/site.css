@@ -29,11 +29,15 @@ h1 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgi
 .source-link { font-size: 14px; text-decoration: none; }
 .source-link span { margin-left: 3px; }
 .promise { font-size: 12px; color: var(--muted); margin: 24px 0 0; line-height: 1.7; }
+.play-link { display: inline-flex; align-items: center; gap: 26px; padding: 16px 24px; background: var(--accent); color: var(--paper); border-radius: 12px; text-decoration: none; font-weight: 600; }
+.play-link:hover { color: var(--paper); filter: brightness(1.1); }
+.native-status { font-size: 12px; color: var(--muted); margin-top: 16px; }
 .app-preview { margin: 0; text-align: center; }
 .app-preview img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 32px; box-shadow: 0 20px 55px #252c3009; }
 figcaption { font-size: 11px; letter-spacing: .2px; color: var(--muted); margin-top: 20px; }
 .site-footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 25px 0 30px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .site-footer nav { display: flex; gap: 24px; }
+.site-footer nav { flex-wrap: wrap; row-gap: 12px; }
 .site-footer a { text-decoration: none; }
 .skip-link { position: absolute; top: -100px; left: 20px; padding: 12px; background: var(--paper); z-index: 1; }
 .skip-link:focus { top: 12px; }

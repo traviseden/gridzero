@@ -2,6 +2,11 @@
 
 Native Kotlin implementation checked on the connected physical phones, using Terminal / ADB only.
 
+> Historical report for the original 400-puzzle build. The October 12, 2026
+> expansion to 8,000 and Medium/remembered-startup changes require a new Kotlin
+> test/build and device pass. This Mac currently lacks Java setup; this report
+> must not be treated as verification of the expanded release.
+
 | Device | OS reported by device | API | Native display | Density | Result |
 |---|---|---:|---:|---:|---|
 | OnePlus 6 / ONEPLUS A6003 | Murena /e/OS 3.7.3, Android 15 | 35 | 1080 × 2280 | 450 dpi | Passed |

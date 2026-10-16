@@ -110,7 +110,8 @@ struct GameView: View {
         .onChange(of: reduceMotion) { _, _ in finishFlights() }
         .task {
             if model.game == nil {
-                _ = await model.start(difficulty: .easy, mode: model.preferences.mode, source: .collection, empty: 45)
+                _ = await model.start(difficulty: model.preferences.difficulty, mode: model.preferences.mode,
+                                      source: model.preferences.source, empty: model.preferences.customEmpty)
             }
         }
     }

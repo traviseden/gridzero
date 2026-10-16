@@ -45,7 +45,10 @@ class GameTest {
     @Test fun validatesAllSharedCollectionPuzzles() {
         val text = File("../../Sources/GridZeroCore/Resources/puzzles.txt").readText()
         val records = text.lineSequence().filter { it.isNotBlank() }.toList()
-        assertEquals(400, records.size)
+        assertEquals(8000, records.size)
+        for (level in listOf("easy", "medium", "hard", "expert")) {
+            assertEquals(2000, records.count { it.startsWith("$level ") })
+        }
         for (record in records) {
             val data = record.split(' ')[2].map { it.digitToInt() }.toIntArray()
             assertEquals(1, Sudoku.solutions(data).size)

@@ -75,7 +75,7 @@ class MainActivity : Activity() {
         setContentView(surface)
         surface.requestApplyInsets()
         refresh()
-        if (game == null) startPuzzle(Difficulty.EASY, settings.mode, PuzzleSource.COLLECTION, 45) { error ->
+        if (game == null) startPuzzle(settings.difficulty, settings.mode, settings.source, settings.customEmpty) { error ->
             if (error != null) showMessage("Couldn't start a puzzle", error)
         }
     }
@@ -191,7 +191,7 @@ class MainActivity : Activity() {
                         game = Game(puzzle, mode, settings.strikeLimit); selected = puzzle.givens.indexOfFirst { it == 0 }
                         pencil = false; errorCell = null; errorToken++; checkedCells.clear(); outcomeShown = false; lastTick = null
                         played.add(puzzle.id); while (played.size > 500) played.removeAt(0)
-                        settings.difficulty = difficulty; settings.mode = mode; settings.source = source; settings.customEmpty = empty
+                        settings.difficulty = difficulty; settings.mode = mode; settings.source = if (difficulty == Difficulty.CUSTOM) PuzzleSource.GENERATED else source; settings.customEmpty = empty
                         settings.save(this); save(); refresh(); callback(null)
                     }
                 }
@@ -284,7 +284,7 @@ class MainActivity : Activity() {
         }
         content.addView(explanation)
         picker(content, "Puzzle source", PuzzleSource.entries.map { it.title }, source.ordinal) { source = PuzzleSource.entries[it] }
-        label(content, "Collection: 400 rated puzzles. Generation is completely offline. Custom always uses generation.", true)
+        label(content, "Collection: 8,000 rated puzzles. Generation is completely offline. Custom always uses generation.", true)
         val errorLabel = label(content, "", true).apply { setTextColor(palette.error) }
         val scroll = ScrollView(content.context).apply { addView(content) }
         val next = AlertDialog.Builder(content.context).setTitle("New puzzle").setView(scroll)
@@ -351,7 +351,7 @@ class MainActivity : Activity() {
         toggle(content, "Highlight matching numbers", settings.highlightMatching) { settings.highlightMatching = it }
         toggle(content, "Show timer", settings.showTimer) { settings.showTimer = it }
         toggle(content, "Gentle haptics", settings.haptics) { settings.haptics = it }
-        label(content, "GridZero 1.0 · Free and open source. No ads. No tracking. No accounts.\nCollection: Sudoku Exchange puzzle bank, public domain.", true)
+        label(content, "GridZero 1.0 · Free and open source. No ads. No tracking. No accounts.\n8,000 collection puzzles courtesy of Grant McLean / Sudoku Exchange. Generated with QQWing; rated with Sukaku Explainer. Public domain. Credits: https://gridzero.win/credits/", true)
         content.addView(Button(content.context).apply {
             text = "Open-source licenses"
             setOnClickListener {

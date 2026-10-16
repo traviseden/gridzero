@@ -56,7 +56,7 @@ struct NewGameView: View {
                     .accessibilityIdentifier("source-picker")
                 } footer: {
                     Text(difficulty == .custom ? "Custom puzzles are generated on your device." :
-                            source == .collection ? "400 rated, uniqueness-checked puzzles. No downloads needed." :
+                             source == .collection ? "8,000 rated, uniqueness-checked puzzles. No downloads needed." :
                             "Fresh puzzles, generated and checked entirely offline. Expert puzzles may take a moment.")
                 }
                 if let error = model.generationError {

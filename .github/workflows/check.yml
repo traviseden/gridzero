@@ -2,16 +2,46 @@ name: Check
 on:
   push:
   pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   core-and-site:
+    # Standard runners are free on public repositories. Never spend private-repo minutes.
+    if: github.event.repository.private == false
+    timeout-minutes: 15
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
       - name: Test Swift engine
         run: swift test
-      - name: Check static site
-        run: python3 tools/check_site.py
+  web:
+    if: github.event.repository.private == false
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+        working-directory: site
+      - run: npm test
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      - run: python3 tools/check_site.py
+      - run: python3 -m unittest discover -s tools/tests -v
+      - run: npx playwright install --with-deps chromium webkit
+        working-directory: site
+      - run: npm run test:ui
+        working-directory: site
   android:
+    if: github.event.repository.private == false
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

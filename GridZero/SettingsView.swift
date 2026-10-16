@@ -80,8 +80,9 @@ struct SettingsView: View {
                         .font(.subheadline).foregroundStyle(.secondary)
                     Link("Visit gridzero.win", destination: URL(string: "https://gridzero.win")!)
                     Link("Privacy & Support", destination: URL(string: "https://gridzero.win/support/")!)
-                    Text("Collection: Sudoku Exchange puzzle bank, public domain. Easy / Medium / Hard / Expert correspond to its Easy / Medium / Hard / Diabolical ratings.")
+                    Text("8,000 collection puzzles courtesy of Grant McLean / Sudoku Exchange, generated with QQWing and rated with Sukaku Explainer. Public domain. Easy / Medium / Hard / Expert correspond to its Easy / Medium / Hard / Diabolical ratings.")
                         .font(.caption).foregroundStyle(.secondary)
+                    Link("Puzzle credits & licenses", destination: URL(string: "https://gridzero.win/credits/")!)
                 } header: { Text("Zero distractions") }
             }
             .navigationTitle("Settings")
