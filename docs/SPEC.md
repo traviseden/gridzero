@@ -1,6 +1,6 @@
 # GridZero shared product specification
 
-**Version 1.1 · October 12, 2026 · Applies to iOS/iPadOS, Android, and Web/PWA.**
+**Version 1.2 · November 15, 2026 · Applies to iOS/iPadOS, Android, and Web/PWA.**
 
 This is the product contract, not a promise that every release has been verified
 on every device. See [go-live gates](GO-LIVE.md), [data provenance](puzzle-data.md),
@@ -43,7 +43,7 @@ native equivalence.
 | Preference | Fresh-install default |
 |---|---|
 | Difficulty / mode / source | Medium / Challenge / Collection |
-| Strike limit | 3; alternatives 5, 10, unlimited (`0`) |
+| Strike limit | 3; integer 1–5 via number field and − / + controls |
 | Custom empty cells | 45; range 20–60 inclusive |
 | Theme / appearance | Ink / System |
 | Scheduled appearance | Light 07:00; Dark 19:00; local clock, no location |
@@ -107,8 +107,11 @@ suggest retry, fewer empty cells, or the collection—never silently lower setti
 
 Check each non-note entry against the puzzle solution immediately. Wrong digits
 are rejected and add one strike, even without a duplicate in the current board.
-Notes are never solution-checked. Unlimited Challenge still counts strikes but
-never locks at a strike limit. Strike limits belong to the game; Settings changes
+Notes are never solution-checked. New games offer 1–5 strikes. The Settings number
+field and − / + controls enforce that range (default 3). Saved preferences outside
+1–5 reset to 3. Existing games retain their original limits, including legacy
+10/unlimited games; unlimited still counts strikes without locking.
+Strike limits belong to the game; Settings changes
 apply only to future games. Undo/redo never remove strikes.
 
 At the limit, preserve the board and stop entry/erase/notes/history actions. Offer
@@ -135,6 +138,20 @@ gameplay/history actions; replay is through confirmed Restart or New Puzzle.
 
 ## 5. Interface and accessibility
 
+- Prefer whitespace over explanatory copy. Ask the owner explicitly before new
+  design decisions, including added text, helper copy, or other visual clutter.
+- New Puzzle shows controls and concise labels only: difficulty, custom empty-square
+  count when applicable, mode, source, and Start Puzzle. No difficulty descriptions,
+  clue-count/uniqueness prose, collection counts, source marketing, or reassurance
+  about replacing the current puzzle.
+- Mode rules appear only after tapping an accessible ⓘ button beside the mode
+  selector. The popup describes the selected mode and current strike setting;
+  dismissing it preserves every pending New Puzzle choice and the existing game.
+- Settings uses concise section/control labels without explanatory footers or
+  promotional paragraphs. Credits remain available through a link or explicit
+  Credits & Licenses action. No redundant "notes are on" text when the Notes
+  control already indicates its state. Completion/dismissal labels are literal,
+  not congratulatory filler. Keep actionable errors and restart confirmation.
 - Quiet system typography; Ink, Moss, Clay with the existing shared palettes.
 - Portrait phone board edge-to-edge when height permits; shrink on short windows.
   Tablet portrait centered, board capped at 720 points/CSS pixels, keypad at 480.
@@ -145,7 +162,7 @@ gameplay/history actions; replay is through confirmed Restart or New Puzzle.
 - Challenge strike indicators use Xs for small limits, a count for 10/unlimited.
 - Accepted digits travel from keypad to cell. Rejections turn red and recoil;
   Reduce Motion / disabled animations use immediate feedback, not travel/shaking.
-- Completion: Beautifully solved, another puzzle, or dismiss and enjoy the result.
+- Completion: Puzzle complete, another puzzle, or Done.
 - Cells expose row, column, value/clue or notes, selection, and explicit errors to
   assistive technology. Browser dialogs manage focus; controls work with keyboard.
   Web shortcuts: arrows, 1–9, N, Backspace/Delete, Cmd/Ctrl+Z, Shift for redo.
@@ -180,8 +197,8 @@ checks are release gates even when automated Chromium checks pass.
 
 ## 8. Credits, parity, and change management
 
-Credit Grant McLean / Sudoku Exchange, QQWing, and Sukaku Explainer in native
-Settings, website `/credits/`, and documentation. Keep the upstream public-domain
+Credit Grant McLean / Sudoku Exchange, QQWing, and Sukaku Explainer through native
+Settings' Credits & Licenses action/link, website `/credits/`, and documentation. Keep the upstream public-domain
 license in shipped resources. Credit dataset tools without suggesting their code
 is embedded in GridZero. See [provenance](puzzle-data.md).
 

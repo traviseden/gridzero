@@ -51,55 +51,60 @@ const levels = ['easy', 'medium', 'hard', 'expert', 'custom'];
         <button data-action="redo">Redo <span>↷</span></button>
         <button data-action="restart">Restart Puzzle <span>↻</span></button>
       </div>
-      <p class="hint">Keyboard: 1–9 to enter · N for notes · arrows to move · ⌘/Ctrl+Z to undo.</p>
       <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/">Home</a></nav>
     </dialog>
     <dialog id="new-dialog" aria-labelledby="new-title">
       <header class="dialog-header"><h2 id="new-title">New puzzle</h2><button data-close>Done</button></header>
       <form id="new-form">
-        <fieldset><legend>Your kind of puzzle</legend>
+        <fieldset aria-label="Puzzle">
           <label>Difficulty<select name="difficulty">{levels.map(l => <option value={l}>{l[0].toUpperCase() + l.slice(1)}</option>)}</select></label>
           <label id="custom-field" hidden>Empty squares <output id="empty-count">45</output><input name="empty" type="range" min="20" max="60" step="1" value="45" /></label>
-          <p class="hint" id="difficulty-help">Collection puzzles use published difficulty ratings. Generated puzzles are graded by the deductions needed to solve them.</p>
         </fieldset>
-        <fieldset><legend>How you play</legend>
-          <label>Mode<select name="mode"><option value="challenge">Challenge</option><option value="classic">Classic</option></select></label>
-          <p class="hint" id="mode-help"></p>
+        <fieldset aria-label="Mode and source">
+          <div class="mode-row">
+            <label>Mode<select name="mode"><option value="challenge">Challenge</option><option value="classic">Classic</option></select></label>
+            <button type="button" id="mode-info" aria-label="About game mode" aria-haspopup="dialog">ⓘ</button>
+          </div>
           <label>Puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
-          <p class="hint" id="source-help">8,000 rated, uniqueness-checked puzzles. No downloads needed.</p>
         </fieldset>
         <p id="generation-error" role="alert" class="error"></p>
         <button class="primary" id="start-puzzle" type="submit">Start Puzzle</button>
-        <p class="hint">Your current puzzle is replaced only when the new one is ready.</p>
       </form>
+    </dialog>
+    <dialog id="mode-info-dialog" aria-labelledby="mode-info-title" aria-describedby="mode-info-message">
+      <header class="dialog-header"><h2 id="mode-info-title"></h2><button data-close>Done</button></header>
+      <p id="mode-info-message"></p>
     </dialog>
     <dialog id="settings-dialog" aria-labelledby="settings-title">
       <header class="dialog-header"><h2 id="settings-title">Settings</h2><button data-close>Done</button></header>
       <form id="settings-form">
-        <fieldset><legend>Make it yours</legend>
+        <fieldset><legend>Appearance</legend>
           <div class="theme-picker" role="group" aria-label="Color theme">{['ink', 'moss', 'clay'].map(t => <button type="button" data-theme-choice={t} aria-pressed={t === 'ink'}><span class={`swatch ${t}`}></span>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
           <label>Appearance<select name="appearance" aria-label="Appearance"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option><option value="scheduled">Scheduled</option></select></label>
           <div id="schedule" hidden><label>Light at<input type="time" name="lightAt" value="07:00" /></label><label>Dark at<input type="time" name="darkAt" value="19:00" /></label></div>
-          <p class="hint">System follows your device. Scheduled uses your local clock, never your location.</p>
         </fieldset>
         <fieldset><legend>New puzzles</legend>
           <label>Default puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
-          <label>Challenge strike limit<select name="strikeLimit" aria-label="Challenge strike limit"><option value="3">3 strikes</option><option value="5">5 strikes</option><option value="10">10 strikes</option><option value="0">Unlimited</option></select></label>
-          <p class="hint">Strike limits apply to new games. Your current game's rules stay consistent.</p>
+          <div class="strike-limit-row">
+            <label for="strike-limit">Challenge strike limit</label>
+            <div class="number-stepper">
+              <button type="button" id="strike-decrease" aria-label="Decrease strike limit">−</button>
+              <input id="strike-limit" name="strikeLimit" type="number" min="1" max="5" step="1" inputmode="numeric" value="3" />
+              <button type="button" id="strike-increase" aria-label="Increase strike limit">+</button>
+            </div>
+          </div>
         </fieldset>
-        <fieldset><legend>Optional assistance</legend>
+        <fieldset><legend>Notes</legend>
           <label class="toggle">Enable Fill Notes<input name="allowAutofill" type="checkbox" /></label>
           <label class="toggle">Automatically clean up notes<input name="cleanupNotes" type="checkbox" /></label>
-          <p class="hint">Notes are manual by default. Assistance uses only the current board, never the hidden solution. Undo restores the entire move.</p>
         </fieldset>
-        <fieldset><legend>While you play</legend>
+        <fieldset><legend>Gameplay</legend>
           <label class="toggle">Highlight related cells<input name="highlightPeers" type="checkbox" checked /></label>
           <label class="toggle">Highlight matching numbers<input name="highlightMatching" type="checkbox" checked /></label>
           <label class="toggle">Show timer<input name="showTimer" type="checkbox" /></label>
-          <label class="toggle">Gentle haptics (where supported)<input name="haptics" type="checkbox" checked /></label>
+          <label class="toggle">Gentle haptics<input name="haptics" type="checkbox" checked /></label>
         </fieldset>
-        <p class="hint">Free, open source, and offline-ready. No ads. No tracking. No accounts. 8,000 collection puzzles courtesy of <a href="/credits/">Grant McLean / Sudoku Exchange</a>, generated with QQWing and rated with Sukaku Explainer. <a href="/assets/Puzzle-LICENSE.txt">Public domain</a>. Browser and native saves are separate.</p>
-        <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="https://github.com/traviseden/gridzero">Source</a></nav>
+        <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/credits/">Credits &amp; licenses</a><a href="https://github.com/traviseden/gridzero">Source</a></nav>
       </form>
     </dialog>
     <dialog id="notice-dialog" aria-labelledby="notice-title">

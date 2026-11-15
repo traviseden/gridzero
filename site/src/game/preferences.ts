@@ -27,7 +27,7 @@ export function restorePreferences(value: unknown): Preferences {
       p[key] = Math.max(key === 'customEmpty' ? 20 : 0, Math.min(key === 'customEmpty' ? 60 : 1439, Math.round(raw[key])));
     }
   }
-  if ([0, 3, 5, 10].includes(raw.strikeLimit as number)) p.strikeLimit = raw.strikeLimit as number;
+  if (Number.isInteger(raw.strikeLimit) && Number(raw.strikeLimit) >= 1 && Number(raw.strikeLimit) <= 5) p.strikeLimit = raw.strikeLimit as number;
   return p;
 }
 export function darkAppearance(p: Preferences, systemDark: boolean, date = new Date()): boolean {

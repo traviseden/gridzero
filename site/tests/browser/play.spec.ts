@@ -35,7 +35,7 @@ test('manual notes, undo, correct entries, and persistence', async ({ page }) =>
 test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
-  await expect(page.locator('#notice-title')).toHaveText('Time for a fresh start.');
+  await expect(page.locator('#notice-title')).toHaveText('Strike limit reached');
   expect((await saved(page)).strikes).toBe(3); expect((await saved(page)).board.values[2]).toBe(0);
   await page.reload(); await expect(page.locator('#notice-dialog')).toBeVisible();
   await page.locator('#notice-dialog').getByRole('button', { name: 'Continue in Classic', exact: true }).click();
@@ -48,13 +48,23 @@ test('settings persist, themes apply, assistance is opt-in, strike rules stay fi
   await page.locator('[data-theme-choice="moss"]').click();
   await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
   await page.getByLabel('Enable Fill Notes', { exact: true }).check();
-  await page.getByLabel('Challenge strike limit', { exact: true }).selectOption('10');
+  await page.getByLabel('Challenge strike limit', { exact: true }).fill('4');
+  await page.getByLabel('Challenge strike limit', { exact: true }).blur();
+  await page.getByRole('button', { name: 'Increase strike limit' }).click();
+  await expect(page.getByLabel('Challenge strike limit', { exact: true })).toHaveValue('5');
+  await expect(page.getByRole('button', { name: 'Increase strike limit' })).toBeDisabled();
+  await page.getByLabel('Challenge strike limit', { exact: true }).fill('1');
+  await page.getByLabel('Challenge strike limit', { exact: true }).blur();
+  await expect(page.getByRole('button', { name: 'Decrease strike limit' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Increase strike limit' }).click();
   await page.locator('#settings-dialog [data-close]').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'moss');
   await expect(page.locator('html')).toHaveAttribute('data-scheme', 'dark');
   expect((await saved(page)).strikeLimit).toBe(3);
   await menu(page, 'fill'); await expect(page.locator('[data-cell="2"] [data-note="4"]')).toHaveText('4');
   await page.reload(); await expect(page.locator('html')).toHaveAttribute('data-theme', 'moss');
+  await menu(page, 'settings');
+  await expect(page.getByLabel('Challenge strike limit', { exact: true })).toHaveValue('2');
 });
 test('custom generation runs in worker and cancellation keeps old game', async ({ page }) => {
   await load(page); await menu(page, 'new');
@@ -69,12 +79,33 @@ test('custom generation runs in worker and cancellation keeps old game', async (
   await page.locator('#new-dialog [data-close]').click();
   expect((await saved(page)).puzzle.id).toBe(g.puzzle.id);
 });
+test('mode info preserves pending puzzle choices and returns keyboard focus', async ({ page }) => {
+  await load(page, fixture(), { strikeLimit: 5 });
+  const original = await saved(page);
+  await menu(page, 'new');
+  await page.locator('#new-form [name="difficulty"]').selectOption('custom');
+  await page.locator('#new-form [name="empty"]').fill('32');
+  await page.getByRole('button', { name: 'About game mode' }).click();
+  await expect(page.locator('#mode-info-message')).toContainText('5 strikes end the attempt.');
+  await page.locator('#mode-info-dialog [data-close]').click();
+  await expect(page.locator('#mode-info')).toBeFocused();
+  await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('custom');
+  await expect(page.locator('#new-form [name="empty"]')).toHaveValue('32');
+  await page.locator('#new-form [name="mode"]').selectOption('classic');
+  await page.getByRole('button', { name: 'About game mode' }).click();
+  await expect(page.locator('#mode-info-title')).toHaveText('Classic');
+  await expect(page.locator('#mode-info-message')).toContainText('Check Board');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#new-dialog')).toBeVisible();
+  await expect(page.locator('#new-form [name="mode"]')).toHaveValue('classic');
+  expect(await saved(page)).toEqual(original);
+});
 test('completion, restart, and Classic checking', async ({ page }) => {
   const g = fixture(); g.board.values = [...g.puzzle.solution]; g.board.values[2] = 0;
   await load(page, g); await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
-  await expect(page.locator('#notice-title')).toHaveText('Beautifully solved.');
-  await page.getByRole('button', { name: 'Enjoy the moment', exact: true }).click();
+  await expect(page.locator('#notice-title')).toHaveText('Puzzle complete');
+  await page.getByRole('button', { name: 'Done', exact: true }).click();
   await menu(page, 'restart'); await page.getByRole('button', { name: 'Restart', exact: true }).click();
   expect((await saved(page)).board.values).toEqual(example);
 });
@@ -156,7 +187,7 @@ test('startup honors remembered generation and remains usable after cancellation
   // a random puzzle that happened to generate unusually fast.
   await page.route('**/generator.worker-*.js', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: 'self.onmessage = () => {};' }));
   await page.goto('/play/'); await expect(page.locator('#new-dialog')).toBeVisible();
-  await expect(page.locator('#start-puzzle')).toHaveText('Preparing your puzzle…');
+  await expect(page.locator('#start-puzzle')).toHaveText('Preparing…');
   await page.locator('#new-dialog [data-close]').click();
   await menu(page, 'new'); await page.locator('#new-form [name="difficulty"]').selectOption('medium');
   await page.locator('#new-form [name="source"]').selectOption('collection');

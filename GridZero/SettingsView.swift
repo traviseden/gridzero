@@ -5,6 +5,8 @@ struct SettingsView: View {
     @Bindable var model: GameModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @State private var strikeText = ""
+    @FocusState private var strikeFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -40,31 +42,30 @@ struct SettingsView: View {
                         DatePicker("Light at", selection: timeBinding(light: true), displayedComponents: .hourAndMinute)
                         DatePicker("Dark at", selection: timeBinding(light: false), displayedComponents: .hourAndMinute)
                     }
-                } header: { Text("Make it yours") } footer: {
-                    if model.preferences.appearance == .scheduled {
-                        Text("Uses your local clock. No location access needed. Different light and dark times work best.")
-                    } else { Text("System follows your iPhone. Scheduled is an optional daily light/dark switch.") }
-                }
+                } header: { Text("Appearance") }
                 Section {
                     Picker("Default puzzle source", selection: $model.preferences.source) {
                         ForEach(PuzzleSource.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
-                    Picker("Challenge strike limit", selection: $model.preferences.strikeLimit) {
-                        Text("3 strikes").tag(3)
-                        Text("5 strikes").tag(5)
-                        Text("10 strikes").tag(10)
-                        Text("Unlimited").tag(0)
+                    Stepper(value: $model.preferences.strikeLimit, in: 1...5) {
+                        HStack {
+                            Text("Challenge strike limit")
+                            Spacer()
+                            TextField("Strike limit", text: $strikeText)
+                            .keyboardType(.numberPad)
+                            .focused($strikeFocused)
+                            .multilineTextAlignment(.center)
+                            .monospacedDigit()
+                            .frame(width: 36)
+                            .accessibilityLabel("Challenge strike limit")
+                        }
                     }
-                } header: { Text("New puzzles") } footer: {
-                    Text("Strike limits apply to new games. Your current game's rules stay consistent.")
-                }
+                } header: { Text("New puzzles") }
                 Section {
                     Toggle("Enable Fill Notes", isOn: $model.preferences.allowAutofill)
                     Toggle("Automatically clean up notes", isOn: $model.preferences.cleanupNotes)
-                } header: { Text("Optional assistance") } footer: {
-                    Text("Notes are manual by default. Fill Notes adds an undoable action to the game menu. Cleanup removes placed digits from related cells. Both use only the current board, never the hidden solution.")
-                }
-                Section("While you play") {
+                } header: { Text("Notes") }
+                Section("Gameplay") {
                     Toggle("Highlight related cells", isOn: $model.preferences.highlightPeers)
                     Toggle("Highlight matching numbers", isOn: $model.preferences.highlightMatching)
                     Toggle("Show timer", isOn: $model.preferences.showTimer)
@@ -76,18 +77,25 @@ struct SettingsView: View {
                         Spacer()
                         Text("1.0").foregroundStyle(.secondary)
                     }
-                    Text("Free, open source, and entirely offline. No ads. No tracking. No accounts.")
-                        .font(.subheadline).foregroundStyle(.secondary)
                     Link("Visit gridzero.win", destination: URL(string: "https://gridzero.win")!)
                     Link("Privacy & Support", destination: URL(string: "https://gridzero.win/support/")!)
-                    Text("8,000 collection puzzles courtesy of Grant McLean / Sudoku Exchange, generated with QQWing and rated with Sukaku Explainer. Public domain. Easy / Medium / Hard / Expert correspond to its Easy / Medium / Hard / Diabolical ratings.")
-                        .font(.caption).foregroundStyle(.secondary)
                     Link("Puzzle credits & licenses", destination: URL(string: "https://gridzero.win/credits/")!)
-                } header: { Text("Zero distractions") }
+                } header: { Text("About") }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .onAppear { strikeText = String(model.preferences.strikeLimit) }
+            .onChange(of: strikeText) { _, text in
+                guard let value = Int(text) else { return }
+                let bounded = min(5, max(1, value))
+                model.preferences.strikeLimit = bounded
+                if value != bounded { strikeText = String(bounded) }
+            }
+            .onChange(of: model.preferences.strikeLimit) { _, value in strikeText = String(value) }
+            .onChange(of: strikeFocused) { _, focused in
+                if !focused { strikeText = String(model.preferences.strikeLimit) }
+            }
         }
     }
     private func timeBinding(light: Bool) -> Binding<Date> {

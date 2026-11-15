@@ -65,7 +65,7 @@ final class GameModel {
         let stored = UserDefaults.standard.data(forKey: "preferences.v1")
         var prefs = stored.flatMap { try? JSONDecoder().decode(Preferences.self, from: $0) } ?? Preferences()
         prefs.customEmpty = min(60, max(20, prefs.customEmpty))
-        prefs.strikeLimit = [0, 3, 5, 10].contains(prefs.strikeLimit) ? prefs.strikeLimit : 3
+        prefs.strikeLimit = (1...5).contains(prefs.strikeLimit) ? prefs.strikeLimit : 3
         prefs.lightAt = min(1439, max(0, prefs.lightAt))
         prefs.darkAt = min(1439, max(0, prefs.darkAt))
         preferences = prefs

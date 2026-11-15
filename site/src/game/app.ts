@@ -86,10 +86,10 @@ function render() {
   $<HTMLButtonElement>('[data-action="fill"]').disabled = locked(g);
   $<HTMLButtonElement>('[data-action="redo"]').disabled = !canRedo(g);
   const status = $('#status'); status.classList.toggle('error', errorCell >= 0);
-  status.textContent = errorCell >= 0 ? 'Not quite. Try another number.' : g.finished ? 'Puzzle complete. Beautifully solved.' : isOut(g) ? 'Strike limit reached. Your board is saved.' : pencil ? 'Pencil notes are on' : '';
+  status.textContent = errorCell >= 0 ? 'Incorrect number' : '';
   if (errorCell < 0 && (g.finished || isOut(g))) {
     const button = document.createElement('button');
-    button.className = 'status-button'; button.textContent = g.finished ? 'Puzzle complete. Beautifully solved.' : 'Continue in Classic';
+    button.className = 'status-button'; button.textContent = g.finished ? 'Puzzle complete' : 'Continue in Classic';
     button.onclick = g.finished ? outcome : () => { g.mode = 'classic'; render(); save(); };
     status.replaceChildren(button);
   }
@@ -116,13 +116,13 @@ function notice(heading: string, message: string, actions: { label: string; run?
 }
 function outcome() {
   if (!game) return;
-  if (isOut(game)) notice('Time for a fresh start.', `You've reached this game's ${game.strikeLimit}-strike limit. Your board is saved.`, [
+  if (isOut(game)) notice('Strike limit reached', `${game.strikeLimit} strikes.`, [
     { label: 'Retry This Puzzle', run: restart },
     { label: 'Continue in Classic', run: () => { if (game) game.mode = 'classic'; checked.clear(); render(); save(); } },
     { label: 'New Puzzle', run: openNew },
   ]);
-  else if (game.finished) notice('Beautifully solved.', `${title(game.puzzle.difficulty)} · ${title(game.mode)}${preferences.showTimer ? ` · ${time(game.elapsed)}` : ''}`, [
-    { label: 'Another puzzle', run: openNew }, { label: 'Enjoy the moment' },
+  else if (game.finished) notice('Puzzle complete', `${title(game.puzzle.difficulty)} · ${title(game.mode)}${preferences.showTimer ? ` · ${time(game.elapsed)}` : ''}`, [
+    { label: 'Another puzzle', run: openNew }, { label: 'Done' },
   ]);
 }
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
@@ -153,7 +153,7 @@ function entry(digit: number) {
   const token = ++feedbackToken; errorCell = result === 'strike' ? selected : -1;
   haptic(result === 'strike'); render(); save(); animateEntry(digit, selected, result);
   if (result === 'strike') {
-    $('#status').textContent = `Not quite. Strike ${game.strikes}${game.strikeLimit ? ` of ${game.strikeLimit}` : ''}.`;
+    $('#status').textContent = `Strike ${game.strikes}${game.strikeLimit ? ` of ${game.strikeLimit}` : ''}`;
     setTimeout(() => { if (feedbackToken === token) { errorCell = -1; render(); } }, 1100);
   }
   if (result === 'completed' || isOut(game)) outcome();
@@ -171,14 +171,23 @@ function updateNew() {
   const custom = formField(newForm, 'difficulty').value === 'custom';
   $('#custom-field').hidden = !custom; formField(newForm, 'source').disabled = custom || generating;
   $('#empty-count').textContent = formField(newForm, 'empty').value;
-  $('#difficulty-help').textContent = custom ? `${81 - Number(formField(newForm, 'empty').value)} starting clues. Always one unique solution. Custom controls empty cells, not difficulty. Sparse requests may need another attempt.` : 'Collection puzzles use published difficulty ratings. Generated puzzles are graded by the deductions needed to solve them.';
-  $('#mode-help').textContent = formField(newForm, 'mode').value === 'challenge' ? `Wrong entries are rejected and count as strikes. ${preferences.strikeLimit ? `${preferences.strikeLimit} strikes end the attempt.` : 'No strike limit.'} Notes are never checked. Undo never removes strikes.` : 'Enter freely without automatic checking or strikes. Use Check Board in the game menu whenever you want feedback.';
-  $('#source-help').textContent = custom || formField(newForm, 'source').value === 'generated' ? 'Fresh puzzles, generated and checked entirely on your device. Expert puzzles may take a moment.' : '8,000 rated, uniqueness-checked puzzles. No downloads needed.';
 }
+$('#mode-info').addEventListener('click', () => {
+  const mode = formField(newForm, 'mode').value;
+  $('#mode-info-title').textContent = title(mode);
+  $('#mode-info-message').textContent = mode === 'challenge' ?
+    `Wrong entries are rejected and add a strike. ${preferences.strikeLimit ? `${preferences.strikeLimit} strikes end the attempt.` : 'No strike limit.'} Undo does not remove strikes. Notes are not checked.` :
+    'Enter numbers without automatic checking or strikes. Use Check Board in the game menu to check your entries.';
+  // Keep the chooser open underneath so its unsaved selections and focus survive.
+  $<HTMLDialogElement>('#mode-info-dialog').showModal();
+});
+$<HTMLDialogElement>('#mode-info-dialog').addEventListener('close', () => {
+  if (newDialog.open) $('#mode-info').focus();
+});
 function setGenerating(value: boolean) {
   generating = value;
   for (const field of newForm.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button')) field.disabled = value;
-  $('#start-puzzle').textContent = value ? 'Preparing your puzzle…' : 'Start Puzzle';
+  $('#start-puzzle').textContent = value ? 'Preparing…' : 'Start Puzzle';
   newDialog.querySelector('[data-close]')!.textContent = value ? 'Cancel' : 'Done'; updateNew();
 }
 function cancelGeneration() {
@@ -226,6 +235,9 @@ function openSettings() {
 }
 function updateSettings() {
   $('#schedule').hidden = preferences.appearance !== 'scheduled';
+  formField(settingsForm, 'strikeLimit').value = String(preferences.strikeLimit);
+  $<HTMLButtonElement>('#strike-decrease').disabled = preferences.strikeLimit <= 1;
+  $<HTMLButtonElement>('#strike-increase').disabled = preferences.strikeLimit >= 5;
   document.querySelectorAll<HTMLElement>('[data-theme-choice]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === preferences.theme)));
 }
 settingsForm.addEventListener('submit', e => e.preventDefault());
@@ -234,7 +246,8 @@ settingsForm.addEventListener('change', event => {
   if (!field.name) return;
   let value: unknown = field.value;
   if (field instanceof HTMLInputElement && field.type === 'checkbox') value = field.checked;
-  if (field.name === 'strikeLimit') value = Number(field.value);
+  if (field.name === 'strikeLimit') value = field.value.trim() && Number.isFinite(Number(field.value)) ?
+    Math.max(1, Math.min(5, Math.round(Number(field.value)))) : preferences.strikeLimit;
   if (field instanceof HTMLInputElement && field.type === 'time') { if (!field.value) return; const [h, m] = field.value.split(':').map(Number); value = h * 60 + m; }
   preferences = restorePreferences({ ...preferences, [field.name]: value });
   updateSettings(); savePreferences(); render();
@@ -242,6 +255,12 @@ settingsForm.addEventListener('change', event => {
 document.querySelectorAll<HTMLElement>('[data-theme-choice]').forEach(b => b.addEventListener('click', () => {
   preferences.theme = b.dataset.themeChoice as Preferences['theme']; updateSettings(); savePreferences(); render();
 }));
+for (const [id, delta] of [['strike-decrease', -1], ['strike-increase', 1]] as const) {
+  $(`#${id}`).addEventListener('click', () => {
+    preferences.strikeLimit = Math.max(1, Math.min(5, preferences.strikeLimit + delta));
+    updateSettings(); savePreferences();
+  });
+}
 cells.forEach((cell, i) => cell.addEventListener('click', () => { selected = i; render(); }));
 keys.forEach(key => key.addEventListener('click', () => entry(Number(key.dataset.digit))));
 $('#undo').addEventListener('click', () => changed(() => { if (game) undo(game); }));

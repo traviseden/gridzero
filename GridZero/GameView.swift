@@ -79,12 +79,12 @@ struct GameView: View {
         .sheet(isPresented: $model.showCompletion) {
             completion.presentationDetents([.medium])
         }
-        .alert("Time for a fresh start.", isPresented: $model.showStrikeOut) {
+        .alert("Strike limit reached", isPresented: $model.showStrikeOut) {
             Button("Retry This Puzzle") { flights = []; model.retry() }
             Button("Continue in Classic") { flights = []; model.continueClassic() }
             Button("New Puzzle") { showNewGame = true }
         } message: {
-            Text("You've reached this game's \(model.game?.strikeLimit ?? 3)-strike limit. Your board is saved.")
+            Text("\(model.game?.strikeLimit ?? 3) strikes.")
         }
         .alert("Restart this puzzle?", isPresented: $showRetry) {
             Button("Restart", role: .destructive) { flights = []; model.retry() }
@@ -261,15 +261,13 @@ struct GameView: View {
             if let error = model.saveError {
                 Text(error).foregroundStyle(palette.error)
             } else if model.errorCell != nil {
-                Label("Not quite. Try another number.", systemImage: "xmark.circle.fill")
+                Label("Incorrect number", systemImage: "xmark.circle.fill")
                     .foregroundStyle(palette.error)
                     .accessibilityIdentifier("wrong-entry-feedback")
             } else if game.finished {
                 Button("Puzzle complete", systemImage: "checkmark") { model.showCompletion = true }
             } else if game.isOut {
                 Button("Continue in Classic") { model.continueClassic() }
-            } else if model.pencil {
-                Text("Pencil notes are on").foregroundStyle(palette.accent)
             }
         }
         .font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.75)
@@ -340,14 +338,14 @@ struct GameView: View {
     private var completion: some View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.seal").font(.system(size: 42, weight: .light)).foregroundStyle(palette.accent)
-            Text("Beautifully solved.").font(.title2.weight(.medium))
+            Text("Puzzle complete").font(.title2.weight(.medium))
             if let game = model.game {
                 Text("\(game.puzzle.difficulty.title) · \(game.mode.title)\(model.preferences.showTimer ? " · \(time(game.elapsed))" : "")")
                     .font(.subheadline).foregroundStyle(palette.secondary)
             }
             Button("Another puzzle") { model.showCompletion = false; showNewGame = true }
                 .buttonStyle(.borderedProminent).controlSize(.large)
-            Button("Enjoy the moment") { model.showCompletion = false }.font(.subheadline)
+            Button("Done") { model.showCompletion = false }.font(.subheadline)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity).background(palette.paper)
     }

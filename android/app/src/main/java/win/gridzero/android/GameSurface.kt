@@ -101,10 +101,9 @@ class GameSurface(val owner: MainActivity) : ViewGroup(owner) {
             tools[2].update(!game.finished && !game.isOut, owner.pencil)
             status.text = when {
                 owner.saveError != null -> owner.saveError
-                owner.errorCell != null -> "Not quite. Try another number."
+                owner.errorCell != null -> "Incorrect number"
                 game.finished -> "Puzzle complete"
                 game.isOut -> "Continue in Classic"
-                owner.pencil -> "Pencil notes are on"
                 else -> ""
             }
             status.setTextColor(if (owner.errorCell != null || owner.saveError != null) p.error else p.accent)

@@ -8,6 +8,7 @@ struct NewGameView: View {
     @State private var mode: PlayMode
     @State private var source: PuzzleSource
     @State private var empty: Double
+    @State private var showModeInfo = false
 
     init(model: GameModel) {
         self.model = model
@@ -32,32 +33,25 @@ struct NewGameView: View {
                             Text("\(Int(empty))").monospacedDigit().foregroundStyle(.secondary)
                         }
                         Slider(value: $empty, in: 20...60, step: 1).accessibilityLabel("Empty squares")
-                        Text("\(81 - Int(empty)) starting clues. Always one unique solution.")
-                            .font(.caption).foregroundStyle(.secondary)
                     }
-                } footer: {
-                    Text(difficulty == .custom ? "Custom controls the number of empty cells, not the logical difficulty. Very sparse requests can take longer or need another attempt." :
-                            "Collection puzzles use published difficulty ratings. Generated puzzles are graded by the deductions needed to solve them.")
                 }
                 Section {
-                    Picker("Mode", selection: $mode) {
-                        ForEach(PlayMode.allCases, id: \.self) { Text($0.title).tag($0) }
-                    }.pickerStyle(.segmented)
-                    Label(mode == .challenge ? "Immediate feedback" : "Room to explore", systemImage: mode == .challenge ? "checkmark.shield" : "pencil.and.outline")
-                        .font(.subheadline)
-                } footer: {
-                    Text(mode == .challenge ? "Wrong entries are rejected and count as strikes, even if they don't duplicate a number. \(model.preferences.strikeLimit == 0 ? "No strike limit." : "\(model.preferences.strikeLimit) strikes end the attempt.") Notes are never checked." :
-                            "Entries stay on the board without automatic checking. Use Check Board in the game menu whenever you want feedback.")
+                    HStack {
+                        Picker("Mode", selection: $mode) {
+                            ForEach(PlayMode.allCases, id: \.self) { Text($0.title).tag($0) }
+                        }.pickerStyle(.segmented)
+                        Button { showModeInfo = true } label: {
+                            Image(systemName: "info.circle").frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("About game mode")
+                    }
                 }
                 Section {
                     Picker("Puzzle source", selection: $source) {
                         ForEach(PuzzleSource.allCases, id: \.self) { Text($0.title).tag($0) }
                     }.disabled(difficulty == .custom)
                     .accessibilityIdentifier("source-picker")
-                } footer: {
-                    Text(difficulty == .custom ? "Custom puzzles are generated on your device." :
-                             source == .collection ? "8,000 rated, uniqueness-checked puzzles. No downloads needed." :
-                            "Fresh puzzles, generated and checked entirely offline. Expert puzzles may take a moment.")
                 }
                 if let error = model.generationError {
                     Section { Text(error).foregroundStyle(.red).font(.callout) }
@@ -75,19 +69,24 @@ struct NewGameView: View {
                             Spacer()
                             if model.generating {
                                 ProgressView().padding(.trailing, 6)
-                                Text("Preparing your puzzle…")
+                                 Text("Preparing…")
                             } else { Text("Start Puzzle").fontWeight(.semibold) }
                             Spacer()
                         }.padding(.vertical, 8)
                     }
                     .disabled(model.generating)
-                } footer: {
-                    if model.game != nil { Text("Your current puzzle is replaced only when the new one is ready.") }
                 }
             }
             .disabled(model.generating)
             .navigationTitle("New puzzle")
             .navigationBarTitleDisplayMode(.inline)
+            .alert(mode.title, isPresented: $showModeInfo) {
+                Button("Done", role: .cancel) {}
+            } message: {
+                Text(mode == .challenge ?
+                     "Wrong entries are rejected and add a strike. \(model.preferences.strikeLimit == 0 ? "No strike limit." : "\(model.preferences.strikeLimit) strikes end the attempt.") Undo does not remove strikes. Notes are not checked." :
+                     "Enter numbers without automatic checking or strikes. Use Check Board in the game menu to check your entries.")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(model.generating ? "Cancel" : "Done") { model.cancelGeneration(); dismiss() }

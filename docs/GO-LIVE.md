@@ -1,7 +1,7 @@
 # GridZero go-live checklist
 
 Owner-facing release guide for **iOS/iPadOS, Android, and Web/PWA**. Updated
-October 12, 2026. Check boxes are intentionally not marked done just because
+November 15, 2026. Check boxes are intentionally not marked done just because
 source code exists. Never paste passwords, keystore passwords, `.p8` files,
 private keys, or recovery codes into chat or commit them.
 
@@ -14,18 +14,19 @@ For a fresh/replacement Mac and old signing-key transfer, start with
 
 - Gameplay is implemented on all three platforms; the shared bank now has 8,000
   puzzles. Medium is the fresh-install default; valid saves/last choices are retained.
-- Web has a manifest, standalone installation, PNG/touch icons, local saves, and
-  production offline caching. Public hosting/physical installed-PWA tests remain.
-- iOS simulator builds/tests have worked on this Mac. Team configuration exists,
-  and an Apple Development signing identity is now present. **A distribution-signed
-  archive, successful upload, App Store Connect app, and phone verification have
-  not been established.** A certificate alone does not prove App Store access.
+- Web is published at `https://gridzero.win/` through Cloudflare Pages.
+  The game, privacy, support, and credits routes return HTTPS 200.
+  Physical installed-PWA tests remain.
+- App Store Connect app **GridZero Sudoku**, SKU `gridzero-sudoku-ios`, bundle ID
+  `win.gridzero.app`, is created. The first upload succeeded and the owner confirmed
+  the 8,000-puzzle build runs on their phone through TestFlight. Public App Review
+  has not been requested. Full physical-device release checks still remain.
 - Android code was tested on physical devices on the other machine (see its
-  verification report). This Mac currently has no working `java` command. The
-  expanded bundle/default changes need Kotlin and device retesting. Release builds
+  verification report). This Mac now passes Kotlin unit tests, lint, and a debug APK
+  build with the expanded collection and text cleanup. Device retesting remains. Release builds
   now require local signing configuration to produce a signed binary; the original
   setup used a debug key, which may be needed to update existing sideload installs.
-- Web preview is stopped. Nothing in this checklist authorizes publishing secrets,
+- Local web preview is stopped. Nothing in this checklist authorizes publishing secrets,
   buying memberships, submitting reviews, or enabling paid hosting automatically.
 
 ## 1. Shared release gates
@@ -242,6 +243,56 @@ users, or require a GitHub paid subscription.
   costs are separate and must be consciously approved by you.
 
 ## 6. Launch, updates, and rollback
+
+### November 15, 2026 deployment record
+
+- Source: `389b8de`; collection `sudoku-exchange-8000-v1`, SHA-256
+  `322af3981362ac873c3f8a9f930c47e56482f6d3aaa664309b9ffd64e796863d`.
+- Cloudflare Pages project `gridzero`, production branch `main`, direct upload of
+  `site/dist`; deployment `https://01086131.gridzero.pages.dev`.
+  This project has no Git-triggered deployment configured.
+- `cf` OAuth was used for Cloudflare API/DNS access; the Pages upload used
+  Wrangler 4 with the same credentials passed privately through the environment.
+  The installed `cf` CLI has no Pages upload command.
+- Verification: 11 web core tests passed (including every puzzle's uniqueness),
+  build and site checks passed, browser suite 25 passed / 1 skipped (WebKit offline).
+  Public Pages HTML, service worker, CSS, game bundle, and generator worker matched
+  local build bytes. Custom-domain HTTPS returned 200 with expected security headers
+  when resolved explicitly to its public DNS address.
+- Native archive: version `1.0.0`, build `1`; uploaded successfully and installed
+  by the owner through TestFlight. Export options are
+  local at `build/ExportOptions-TestFlight.plist` and allow Xcode to manage upload
+  build numbers.
+
+### Minimal-text cleanup
+
+- New Puzzle explanations removed across iOS, Android, and web; mode rules are
+  behind an accessible info button. Settings paragraphs, redundant notes status,
+  and flowery completion text removed. Policy recorded in `SPEC.md` and `AGENTS.md`.
+- Web deployment: `https://233dfa2c.gridzero.pages.dev`, also live at `gridzero.win`.
+  Production WebKit smoke check verified the info popup returns to the chooser.
+- Verification: 14 Swift tests, 11 web core tests, 27 browser tests passed;
+  WebKit offline test remains skipped. Android unit tests/lint and debug APK build
+  passed. iOS Release archive built at `build/GridZero-clean-ui.xcarchive`,
+  version `1.0.0`, build `2`, uploaded successfully to App Store Connect for
+  TestFlight (processing at upload completion). It includes
+  `ITSAppUsesNonExemptEncryption = false`. No public review submission.
+- iOS simulator: mode-info/Classic generation and Challenge rejection tests passed;
+  Settings test initially missed the iOS 27 menu accessibility hit point. With a
+  center-of-row tap in the UI test, Settings/notes/undo/appearance/relaunch passed.
+  Android's new info popup still needs a physical-device interaction check.
+
+### Strike-limit number control
+
+- Replaced presets with an editable integer and − / + controls, range 1–5,
+  on all three platforms. Default remains 3; legacy saved games retain their rules.
+- iOS `1.0.0 (3)` archived at `build/GridZero-strike-stepper.xcarchive` and
+  uploaded successfully for TestFlight; processing at upload completion.
+- Web deployment `https://cefabc40.gridzero.pages.dev`, live at `gridzero.win`;
+  production WebKit check verified editing, incrementing, and the upper bound.
+- Passed: iOS Settings UI test (number entry and increment), 14 Swift tests,
+  11 web core tests, 27 browser tests (1 existing WebKit offline skip), site checks,
+  and Android unit tests/lint/debug build. Physical Android control testing remains.
 
 - [ ] Record released commit, collection hash/version, native build numbers, APK hash
   and signing fingerprint, and deployed web build.

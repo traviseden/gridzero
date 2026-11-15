@@ -1,4 +1,6 @@
 .DS_Store
+.cloudflare/
+.wrangler/
 __pycache__/
 .build/
 build/

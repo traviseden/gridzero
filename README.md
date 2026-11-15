@@ -11,7 +11,7 @@
 ## The app
 
 - Edge-to-edge 9×9 board on portrait iPhones and a staggered thumb-friendly keypad: `1 3 5 7 9` above `2 4 6 8`.
-- **Challenge:** immediate solution checking, three strikes by default; configurable 3 / 5 / 10 / unlimited. Wrong entries are rejected. Undo never removes strikes.
+- **Challenge:** immediate solution checking, three strikes by default; configurable 1–5 with a number field and − / + controls. Wrong entries are rejected. Undo never removes strikes.
 - **Classic:** freely enter hypotheses, then explicitly Check Board. No automatic error checking or strikes.
 - Manual 3×3 pencil notes by default; opt-in Fill Notes and automatic cleanup. Undo/redo restores whole moves, including affected notes.
 - Easy / Medium / Hard / Expert collection; optional offline generation; Custom with 20–60 empty squares and exact-count uniqueness checks.

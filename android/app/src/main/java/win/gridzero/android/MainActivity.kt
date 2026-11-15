@@ -154,8 +154,8 @@ class MainActivity : Activity() {
         val current = game ?: return
         if (current.isOut) {
             outcomeShown = true
-            track(AlertDialog.Builder(dialogContext()).setTitle("Time for a fresh start.")
-                .setMessage("You've reached this game's ${current.strikeLimit}-strike limit. Your board is saved.")
+            track(AlertDialog.Builder(dialogContext()).setTitle("Strike limit reached")
+                .setMessage("${current.strikeLimit} strikes.")
                 .setPositiveButton("Retry This Puzzle") { _, _ -> retry() }
                 .setNegativeButton("Continue in Classic") { _, _ -> continueClassic() }
                 .setNeutralButton("New Puzzle") { _, _ -> showNewPuzzle() }.create())
@@ -164,10 +164,10 @@ class MainActivity : Activity() {
     fun showCompletion() {
         val current = game ?: return
         outcomeShown = true
-        track(AlertDialog.Builder(dialogContext()).setTitle("Beautifully solved.")
+        track(AlertDialog.Builder(dialogContext()).setTitle("Puzzle complete")
             .setMessage("${current.puzzle.difficulty.title} · ${current.mode.title}${if (settings.showTimer) " · ${GameSurface.formatTime(current.elapsedMillis)}" else ""}")
             .setPositiveButton("Another puzzle") { _, _ -> showNewPuzzle() }
-            .setNegativeButton("Enjoy the moment", null).create())
+            .setNegativeButton("Done", null).create())
     }
     fun continueClassic() { surface.cancelFlight(); game?.continueClassic(); outcomeShown = false; changed() }
     fun retry() {
@@ -243,8 +243,17 @@ class MainActivity : Activity() {
         this.text = text; textSize = if (small) 13f else 16f; setTextColor(if (small) palette.secondary else palette.ink)
         setPadding(0, dp(12f).toInt(), 0, dp(6f).toInt()); parent.addView(this)
     }
-    private fun picker(parent: LinearLayout, title: String, options: List<String>, selected: Int, change: (Int) -> Unit): Spinner {
-        label(parent, title)
+    private fun picker(parent: LinearLayout, title: String, options: List<String>, selected: Int, info: (() -> Unit)? = null, change: (Int) -> Unit): Spinner {
+        if (info == null) label(parent, title) else {
+            val row = LinearLayout(parent.context).apply { gravity = android.view.Gravity.CENTER_VERTICAL }
+            label(row, title).layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            row.addView(Button(parent.context).apply {
+                text = "ⓘ"; contentDescription = "About game mode"
+                setTextColor(palette.accent)
+                setOnClickListener { info() }
+            }, LinearLayout.LayoutParams(dp(48f).toInt(), dp(48f).toInt()))
+            parent.addView(row)
+        }
         return Spinner(parent.context).apply {
             adapter = ArrayAdapter(parent.context, android.R.layout.simple_spinner_dropdown_item, options)
             setSelection(selected)
@@ -259,12 +268,12 @@ class MainActivity : Activity() {
         val content = form()
         var level = settings.difficulty; var mode = settings.mode; var source = settings.source; var empty = settings.customEmpty
         val custom = LinearLayout(content.context).apply { orientation = LinearLayout.VERTICAL }
-        val customLabel = label(custom, "$empty empty squares · ${81 - empty} starting clues")
+        val customLabel = label(custom, "Empty squares: $empty")
         val slider = SeekBar(content.context).apply {
             max = 40; progress = empty - 20; contentDescription = "Empty squares"
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, value: Int, fromUser: Boolean) {
-                    empty = value + 20; customLabel.text = "$empty empty squares · ${81 - empty} starting clues"
+                    empty = value + 20; customLabel.text = "Empty squares: $empty"
                 }
                 override fun onStartTrackingTouch(seekBar: SeekBar?) {}
                 override fun onStopTrackingTouch(seekBar: SeekBar?) {}
@@ -275,16 +284,17 @@ class MainActivity : Activity() {
             level = Difficulty.entries[it]; custom.visibility = if (level == Difficulty.CUSTOM) View.VISIBLE else View.GONE
         }
         content.addView(custom); custom.visibility = if (level == Difficulty.CUSTOM) View.VISIBLE else View.GONE
-        label(content, "Custom controls empty squares, not logical difficulty. Every puzzle has one unique solution.", true)
-        val explanation = TextView(content.context).apply { textSize = 13f; setTextColor(palette.secondary) }
-        picker(content, "Mode", PlayMode.entries.map { it.title }, mode.ordinal) {
+        picker(content, "Mode", PlayMode.entries.map { it.title }, mode.ordinal, info = {
+            val message = if (mode == PlayMode.CHALLENGE)
+                "Wrong entries are rejected and add a strike. ${if (settings.strikeLimit == 0) "No strike limit." else "${settings.strikeLimit} strikes end the attempt."} Undo does not remove strikes. Notes are not checked."
+                else "Enter numbers without automatic checking or strikes. Use Check Board in the game menu to check your entries."
+            // Show above the chooser without dismissing it or losing pending selections.
+            AlertDialog.Builder(content.context).setTitle(mode.title).setMessage(message)
+                .setPositiveButton("Done", null).show()
+        }) {
             mode = PlayMode.entries[it]
-            explanation.text = if (mode == PlayMode.CHALLENGE) "Immediate feedback. Wrong entries are rejected and add a strike. Notes are never checked."
-                else "Solve freely. Use Check Board when you want feedback. No strikes."
         }
-        content.addView(explanation)
         picker(content, "Puzzle source", PuzzleSource.entries.map { it.title }, source.ordinal) { source = PuzzleSource.entries[it] }
-        label(content, "Collection: 8,000 rated puzzles. Generation is completely offline. Custom always uses generation.", true)
         val errorLabel = label(content, "", true).apply { setTextColor(palette.error) }
         val scroll = ScrollView(content.context).apply { addView(content) }
         val next = AlertDialog.Builder(content.context).setTitle("New puzzle").setView(scroll)
@@ -339,25 +349,52 @@ class MainActivity : Activity() {
             schedule.addView(button)
         }
         content.addView(schedule); schedule.visibility = if (settings.appearance == Appearance.SCHEDULED) View.VISIBLE else View.GONE
-        label(content, "Scheduled uses your local clock. No location access needed.", true)
         picker(content, "Default puzzle source", PuzzleSource.entries.map { it.title }, settings.source.ordinal) { settings.source = PuzzleSource.entries[it]; persist() }
-        val limits = listOf(3, 5, 10, 0)
-        picker(content, "Challenge strike limit", listOf("3 strikes", "5 strikes", "10 strikes", "Unlimited"), limits.indexOf(settings.strikeLimit)) { settings.strikeLimit = limits[it]; persist() }
-        label(content, "Strike limits apply to new games.", true)
+        label(content, "Challenge strike limit")
+        val strikeRow = LinearLayout(content.context).apply { gravity = Gravity.CENTER_VERTICAL }
+        val decrease = Button(content.context).apply { text = "−"; contentDescription = "Decrease strike limit" }
+        val increase = Button(content.context).apply { text = "+"; contentDescription = "Increase strike limit" }
+        val strikeField = EditText(content.context).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            gravity = Gravity.CENTER
+            contentDescription = "Challenge strike limit"
+            setText(settings.strikeLimit.toString())
+            setSelectAllOnFocus(true)
+        }
+        fun updateStrikeLimit(value: Int) {
+            settings.strikeLimit = value.coerceIn(1, 5)
+            val text = settings.strikeLimit.toString()
+            if (strikeField.text.toString() != text) strikeField.setText(text)
+            decrease.isEnabled = settings.strikeLimit > 1
+            increase.isEnabled = settings.strikeLimit < 5
+            persist()
+        }
+        decrease.setOnClickListener { updateStrikeLimit(settings.strikeLimit - 1) }
+        increase.setOnClickListener { updateStrikeLimit(settings.strikeLimit + 1) }
+        strikeField.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                if (!s.isNullOrEmpty()) updateStrikeLimit(s.toString().toIntOrNull() ?: settings.strikeLimit)
+            }
+        })
+        strikeField.setOnFocusChangeListener { _, focused -> if (!focused) updateStrikeLimit(settings.strikeLimit) }
+        for (view in listOf(decrease, strikeField, increase)) strikeRow.addView(view, LinearLayout.LayoutParams(dp(48f).toInt(), dp(48f).toInt()))
+        decrease.isEnabled = settings.strikeLimit > 1; increase.isEnabled = settings.strikeLimit < 5
+        content.addView(strikeRow)
         toggle(content, "Enable Fill Notes", settings.allowAutofill) { settings.allowAutofill = it }
         toggle(content, "Automatically clean up notes", settings.cleanupNotes) { settings.cleanupNotes = it }
-        label(content, "Notes are manual by default. Autofill and cleanup use only your current board, never the hidden answer.", true)
         toggle(content, "Highlight related cells", settings.highlightPeers) { settings.highlightPeers = it }
         toggle(content, "Highlight matching numbers", settings.highlightMatching) { settings.highlightMatching = it }
         toggle(content, "Show timer", settings.showTimer) { settings.showTimer = it }
         toggle(content, "Gentle haptics", settings.haptics) { settings.haptics = it }
-        label(content, "GridZero 1.0 · Free and open source. No ads. No tracking. No accounts.\n8,000 collection puzzles courtesy of Grant McLean / Sudoku Exchange. Generated with QQWing; rated with Sukaku Explainer. Public domain. Credits: https://gridzero.win/credits/", true)
+        label(content, "GridZero 1.0", true)
         content.addView(Button(content.context).apply {
-            text = "Open-source licenses"
+            text = "Credits & licenses"
             setOnClickListener {
                 val notices = listOf("ThirdPartyNotices.txt", "License-MIT.txt", "Apache-2.0.txt", "Puzzle-LICENSE.txt")
                     .joinToString("\n\n") { name -> assets.open(name).bufferedReader().use { it.readText() } }
-                showMessage("Open-source licenses", notices)
+                showMessage("Credits & licenses", "Puzzles: Grant McLean / Sudoku Exchange. Generated with QQWing; rated with Sukaku Explainer. Public domain.\n\n$notices")
             }
         })
         track(AlertDialog.Builder(content.context).setTitle("Settings")

@@ -101,7 +101,9 @@ test('preferences are validated and overnight schedules use local clock correctl
   assert.equal(defaults.difficulty, 'medium');
   assert.equal(restorePreferences({ difficulty: 'hard' }).difficulty, 'hard');
   const p = restorePreferences({ theme: 'bad', showTimer: 'yes', strikeLimit: 2, customEmpty: 999, lightAt: -1 });
-  assert.equal(p.theme, 'ink'); assert.equal(p.showTimer, false); assert.equal(p.strikeLimit, 3);
+  assert.equal(p.theme, 'ink'); assert.equal(p.showTimer, false); assert.equal(p.strikeLimit, 2);
+  for (const limit of [1, 2, 3, 4, 5]) assert.equal(restorePreferences({ strikeLimit: limit }).strikeLimit, limit);
+  for (const limit of [0, 6, 10, -1, 2.5, '4']) assert.equal(restorePreferences({ strikeLimit: limit }).strikeLimit, 3);
   assert.equal(p.customEmpty, 60); assert.equal(p.lightAt, 0);
   const overnight = { ...defaults, appearance: 'scheduled' as const, lightAt: 1200, darkAt: 420 };
   assert.equal(darkAppearance(overnight, false, new Date(2026, 0, 1, 23)), false);

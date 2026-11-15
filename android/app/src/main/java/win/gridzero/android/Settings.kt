@@ -42,7 +42,7 @@ data class Settings(
                 Settings(Theme.valueOf(j.getString("theme")), Appearance.valueOf(j.getString("appearance")),
                     j.getInt("lightAt").coerceIn(0, 1439), j.getInt("darkAt").coerceIn(0, 1439),
                     PuzzleSource.valueOf(j.getString("source")), Difficulty.valueOf(j.getString("difficulty")),
-                    PlayMode.valueOf(j.getString("mode")), j.getInt("strikeLimit").let { if (it in listOf(0, 3, 5, 10)) it else 3 },
+                    PlayMode.valueOf(j.getString("mode")), j.getInt("strikeLimit").let { if (it in 1..5) it else 3 },
                     j.getInt("customEmpty").coerceIn(20, 60), j.getBoolean("allowAutofill"), j.getBoolean("cleanupNotes"),
                     j.getBoolean("highlightPeers"), j.getBoolean("highlightMatching"), j.getBoolean("showTimer"), j.getBoolean("haptics"))
             } catch (_: Exception) { Settings() }
