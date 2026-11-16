@@ -44,6 +44,17 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "DB255357DFB33C0DAA88D0ED"
+               BuildableName = "GridZeroModelTests.xctest"
+               BlueprintName = "GridZeroModelTests"
+               ReferencedContainer = "container:GridZero.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "189560679E3159CA79A2FE6F"
                BuildableName = "GridZeroUITests.xctest"
                BlueprintName = "GridZeroUITests"

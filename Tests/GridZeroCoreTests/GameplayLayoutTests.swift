@@ -10,8 +10,9 @@ private struct DeviceProfile: Decodable {
     let height: Double
 }
 
-private func checkLayout(_ size: CGSize, tablet: Bool, context: String = "") {
-    let layout = GameplayLayout(size: size, isTablet: tablet)
+private func checkLayout(_ size: CGSize, tablet: Bool, context: String = "",
+                         textScale: CGFloat = 1, expandedStatus: Bool = false) {
+    let layout = GameplayLayout(size: size, isTablet: tablet, textScale: textScale, expandedStatus: expandedStatus)
     let bounds = CGRect(origin: .zero, size: size).insetBy(dx: -0.01, dy: -0.01)
     for region in layout.regions {
         #expect(region.width > 0 && region.height > 0, "Positive region: \(context) \(size)")
@@ -38,6 +39,19 @@ private func checkLayout(_ size: CGSize, tablet: Bool, context: String = "") {
         #expect(key.midX > layout.keyFrame(for: even - 1).midX)
         #expect(key.midX < layout.keyFrame(for: even + 1).midX)
         #expect(key.minY >= layout.keyFrame(for: even - 1).maxY)
+    }
+}
+
+@Test func enlargedStandardTextAndStorageErrorsKeepControlsInBounds() {
+    for size in [CGSize(width: 320, height: 320), CGSize(width: 320, height: 580),
+                 CGSize(width: 390, height: 740), CGSize(width: 600, height: 286),
+                 CGSize(width: 720, height: 340), CGSize(width: 874, height: 368),
+                 CGSize(width: 768, height: 1024)] {
+        for scale in [1.0, 1.2, 1.4, 1.6] {
+            for expanded in [false, true] {
+                checkLayout(size, tablet: size.width == 768, textScale: scale, expandedStatus: expanded)
+            }
+        }
     }
 }
 

@@ -8,6 +8,11 @@ struct GameView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .caption) private var captionSize = 12.0
+    @ScaledMetric(relativeTo: .caption) private var timerSize = 13.0
+    @ScaledMetric(relativeTo: .subheadline) private var difficultySize = 15.0
+    @ScaledMetric(relativeTo: .title2) private var titleSize = 25.0
     @State private var showNewGame = false
     @State private var showSettings = false
     @State private var showRetry = false
@@ -17,41 +22,23 @@ struct GameView: View {
     @State private var rejectionPulse: CGFloat = 0
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private var palette: Palette { Palette(theme: model.preferences.theme, dark: colorScheme == .dark) }
+    private var accessibleLayout: Bool { dynamicTypeSize.isAccessibilitySize }
+    private var gameplayActive: Bool {
+        scenePhase == .active && !showNewGame && !showSettings && !showRetry &&
+        !model.showCompletion && !model.showStrikeOut && model.notice == nil &&
+        !model.showRecoveryAlert && !model.loading && !model.generating &&
+        model.game != nil && model.game?.finished == false && model.game?.isOut == false
+    }
 
     var body: some View {
         GeometryReader { geometry in
-            let layout = GameplayLayout(size: geometry.size, isTablet: UIDevice.current.userInterfaceIdiom == .pad)
+            let layout = GameplayLayout(size: geometry.size, isTablet: UIDevice.current.userInterfaceIdiom == .pad,
+                                        textScale: captionSize / 12, expandedStatus: model.saveError != nil)
             ZStack(alignment: .topLeading) {
-                header.accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("game-header").gameRegion(layout.header)
-                if let game = model.game {
-                    metadata(game, layout: layout)
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("game-metadata").gameRegion(layout.metadata)
-                    BoardView(model: model, game: game, palette: palette,
-                              hiddenValues: Set(flights.filter(\.accepted).map(\.index)), rejectionPulse: rejectionPulse)
-                        .frame(width: layout.board.width, height: layout.board.height)
-                        .accessibilityIdentifier("board-frame")
-                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("game")) } action: { boardFrame = $0 }
-                        .position(x: layout.board.midX, y: layout.board.midY)
-                    controls(game, layout: layout)
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("game-tools").gameRegion(layout.tools)
-                    keypad(game, layout: layout)
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier("game-keypad").gameRegion(layout.keypad)
-                    footer(game).gameRegion(layout.status)
+                if accessibleLayout, let game = model.game {
+                    accessibleGame(game, width: geometry.size.width, layout: layout)
                 } else {
-                    VStack(spacing: 20) {
-                        Image(systemName: "square.grid.3x3").font(.system(size: 54, weight: .ultraLight))
-                        if model.generating { ProgressView().padding() }
-                        if let error = model.generationError {
-                            Text(error).font(.callout).padding()
-                            Button("Choose a puzzle") { showNewGame = true }.buttonStyle(.borderedProminent)
-                        }
-                    }
-                    .frame(maxWidth: min(480, geometry.size.width - 32), maxHeight: geometry.size.height)
-                    .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+                    fixedGame(layout, size: geometry.size)
                 }
                 ForEach(flights) { flight in
                     Text("\(flight.digit)")
@@ -77,7 +64,13 @@ struct GameView: View {
         .sheet(isPresented: $showNewGame) { NewGameView(model: model) }
         .sheet(isPresented: $showSettings) { SettingsView(model: model) }
         .sheet(isPresented: $model.showCompletion) {
-            completion.presentationDetents([.medium])
+            completion.presentationDetents(accessibleLayout ? [.large] : [.medium])
+        }
+        .alert("Couldn't restore your game", isPresented: $model.showRecoveryAlert) {
+            Button("Retry") { Task { await model.restore() } }
+            Button("New Puzzle") { showNewGame = true }
+        } message: {
+            Text(model.recoveryError ?? "")
         }
         .alert("Strike limit reached", isPresented: $model.showStrikeOut) {
             Button("Retry This Puzzle") { flights = []; model.retry() }
@@ -98,31 +91,92 @@ struct GameView: View {
         } message: {
             Text(model.notice?.message ?? "")
         }
-        .onReceive(timer) { _ in
-            model.tick(active: scenePhase == .active && !showNewGame && !showSettings && !model.showCompletion)
-        }
+        .onReceive(timer) { _ in model.tick() }
+        .onChange(of: gameplayActive, initial: true) { _, active in model.setActive(active) }
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { finishFlights(); model.pause() } else { model.clock = Date() }
         }
-        .onChange(of: showNewGame) { _, _ in finishFlights(); model.pause() }
-        .onChange(of: showSettings) { _, _ in finishFlights(); model.pause() }
+        .onChange(of: showNewGame) { _, showing in
+            finishFlights()
+            if !showing, model.game == nil, model.recoveryError != nil { model.showRecoveryAlert = true }
+        }
+        .onChange(of: showSettings) { _, _ in finishFlights() }
         .onChange(of: model.game?.puzzle.id) { _, _ in flights = [] }
         .onChange(of: reduceMotion) { _, _ in finishFlights() }
-        .task {
-            if model.game == nil {
-                _ = await model.start(difficulty: model.preferences.difficulty, mode: model.preferences.mode,
-                                      source: model.preferences.source, empty: model.preferences.customEmpty)
+        .onDisappear { model.pause() }
+        .task { await model.bootstrap() }
+    }
+
+    @ViewBuilder private func fixedGame(_ layout: GameplayLayout, size: CGSize) -> some View {
+        header.accessibilityElement(children: .contain)
+            .accessibilityIdentifier("game-header").gameRegion(layout.header)
+        if let game = model.game {
+            metadata(game, layout: layout)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("game-metadata").gameRegion(layout.metadata)
+            BoardView(model: model, game: game, palette: palette,
+                      hiddenValues: Set(flights.filter(\.accepted).map(\.index)), rejectionPulse: rejectionPulse)
+                .frame(width: layout.board.width, height: layout.board.height)
+                .accessibilityIdentifier("board-frame")
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("game")) } action: { boardFrame = $0 }
+                .position(x: layout.board.midX, y: layout.board.midY)
+            controls(game, layout: layout)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("game-tools").gameRegion(layout.tools)
+            keypad(game, layout: layout)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("game-keypad").gameRegion(layout.keypad)
+            if model.saveError != nil {
+                ScrollView(.vertical) { footer(game).frame(maxWidth: .infinity) }.gameRegion(layout.status)
+            } else {
+                footer(game).gameRegion(layout.status)
             }
+        } else {
+            VStack(spacing: 20) {
+                Image(systemName: "square.grid.3x3").font(.system(size: 54, weight: .ultraLight))
+                if model.generating || model.loading { ProgressView().padding() }
+                if let error = model.generationError {
+                    Text(error).font(.callout).padding()
+                    Button("Choose a puzzle") { showNewGame = true }.buttonStyle(.borderedProminent)
+                }
+            }
+            .frame(maxWidth: min(480, size.width - 32), maxHeight: size.height)
+            .position(x: size.width / 2, y: size.height / 2)
         }
+    }
+
+    private func accessibleGame(_ game: Game, width: CGFloat, layout: GameplayLayout) -> some View {
+        ScrollView {
+            VStack(spacing: 24) {
+                header.padding(.horizontal, 22)
+                metadata(game, layout: layout).padding(.horizontal, 22)
+                BoardView(model: model, game: game, palette: palette,
+                          hiddenValues: Set(flights.filter(\.accepted).map(\.index)), rejectionPulse: rejectionPulse)
+                    .frame(width: min(720, width), height: min(720, width))
+                    .accessibilityIdentifier("board-frame")
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .named("game")) } action: {
+                        if boardFrame != $0 { finishFlights() }
+                        boardFrame = $0
+                    }
+                controls(game, layout: layout).padding(.horizontal, 18)
+                keypad(game, layout: layout).frame(maxWidth: 480).padding(.horizontal, 18)
+                footer(game).padding(.horizontal, 22)
+            }
+            .padding(.vertical, 12)
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityIdentifier("accessible-game")
     }
 
     private var header: some View {
         HStack {
-            Text("GridZero").font(.system(size: 25, weight: .semibold, design: .rounded)).tracking(-0.7)
+            Text("GridZero").font(.system(size: titleSize, weight: .semibold, design: .rounded)).tracking(-0.7)
             Spacer()
             Menu {
-                Button("New Puzzle", systemImage: "plus") { showNewGame = true }
-                Button("Settings", systemImage: "slider.horizontal.3") { showSettings = true }
+                Button("New Puzzle", systemImage: "plus") { model.pause(); showNewGame = true }
+                    .disabled(model.loading)
+                Button("Settings", systemImage: "slider.horizontal.3") { model.pause(); showSettings = true }
                 if model.game?.mode == .classic {
                     Button("Check Board", systemImage: "checkmark.circle") { model.checkBoard() }
                 }
@@ -132,7 +186,7 @@ struct GameView: View {
                 }
                 Button("Redo", systemImage: "arrow.uturn.forward") { flights = []; model.redo() }
                     .disabled(model.game?.canRedo != true)
-                Button("Restart Puzzle", systemImage: "arrow.counterclockwise") { showRetry = true }
+                Button("Restart Puzzle", systemImage: "arrow.counterclockwise") { model.pause(); showRetry = true }
                     .disabled(model.game == nil)
             } label: {
                 Image(systemName: "ellipsis").font(.system(size: 18)).frame(width: 44, height: 44)
@@ -143,30 +197,33 @@ struct GameView: View {
     }
 
     private func metadata(_ game: Game, layout: GameplayLayout) -> some View {
-        HStack(alignment: .center) {
-            if layout.tight {
+        let arrangement = accessibleLayout ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) :
+            AnyLayout(HStackLayout(alignment: .center))
+        return arrangement {
+            if layout.tight && !accessibleLayout {
                 HStack(spacing: 6) {
                     difficultyLabel(game)
                     Text("·").foregroundStyle(palette.secondary)
-                    Text(game.mode.title).font(.system(size: 12)).foregroundStyle(palette.secondary)
+                    Text(game.mode.title).font(.system(size: captionSize)).foregroundStyle(palette.secondary)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 2) {
                     difficultyLabel(game)
-                    Text(game.mode.title).font(.system(size: 12)).foregroundStyle(palette.secondary)
+                    Text(game.mode.title).font(.system(size: captionSize)).foregroundStyle(palette.secondary)
                 }
             }
-            Spacer()
+            if !accessibleLayout { Spacer() }
             if model.preferences.showTimer {
-                Text(time(game.elapsed)).monospacedDigit().font(.system(size: 13)).foregroundStyle(palette.secondary)
-                    .accessibilityLabel("Elapsed time \(time(game.elapsed))")
+                Text(game.elapsedText).monospacedDigit().font(.system(size: timerSize)).foregroundStyle(palette.secondary)
+                    .accessibilityLabel("Elapsed time \(game.elapsedText)")
+                    .accessibilityIdentifier("elapsed-time")
             }
             if game.mode == .challenge {
                 if game.strikeLimit > 0 && game.strikeLimit <= 5 {
                     HStack(spacing: 6) {
                         ForEach(0..<game.strikeLimit, id: \.self) { strike in
                             Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.system(size: captionSize, weight: .bold))
                                 .foregroundStyle(strike < game.strikes ? palette.error : palette.line.opacity(0.65))
                                 .scaleEffect(strike < game.strikes ? 1 : 0.85)
                                 .animation(reduceMotion ? nil : .spring(response: 0.25, dampingFraction: 0.55), value: game.strikes)
@@ -177,10 +234,10 @@ struct GameView: View {
                     .accessibilityIdentifier("strikes")
                 } else {
                     HStack(spacing: 5) {
-                        Image(systemName: "xmark").font(.system(size: 12, weight: .bold))
+                        Image(systemName: "xmark").font(.system(size: captionSize, weight: .bold))
                             .foregroundStyle(game.strikes > 0 ? palette.error : palette.secondary)
                         Text("\(game.strikes)\(game.strikeLimit == 0 ? "" : " / \(game.strikeLimit)")")
-                            .font(.system(size: 12)).foregroundStyle(palette.secondary)
+                            .font(.system(size: captionSize)).foregroundStyle(palette.secondary)
                     }
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(game.strikeLimit == 0 ? "\(game.strikes) strikes" : "\(game.strikes) of \(game.strikeLimit) strikes")
@@ -188,12 +245,14 @@ struct GameView: View {
                 }
             }
         }
-        .lineLimit(1).minimumScaleFactor(0.8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .lineLimit(accessibleLayout ? nil : 1)
+        .minimumScaleFactor(accessibleLayout ? 1 : 0.8)
     }
 
     private func difficultyLabel(_ game: Game) -> some View {
         Text(game.puzzle.difficulty == .custom ? "Custom · \(game.puzzle.givens.filter { $0 == 0 }.count) empty" : game.puzzle.difficulty.title)
-            .font(.system(size: 15, weight: .semibold))
+            .font(.system(size: difficultySize, weight: .semibold))
     }
 
     private func controls(_ game: Game, layout: GameplayLayout) -> some View {
@@ -208,9 +267,10 @@ struct GameView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 Image(systemName: symbol).font(.system(size: layout.compact ? 18 : 20))
-                Text(title).font(.system(size: 12, weight: active ? .semibold : .regular))
+                Text(title).font(.system(size: captionSize, weight: active ? .semibold : .regular))
             }
-            .frame(width: layout.toolWidth, height: layout.toolHeight)
+            .frame(width: accessibleLayout ? nil : layout.toolWidth, height: accessibleLayout ? nil : layout.toolHeight)
+            .frame(maxWidth: accessibleLayout ? .infinity : nil, minHeight: 44)
             .foregroundStyle(active ? palette.accent : palette.secondary)
             .background(active ? palette.accent.opacity(0.1) : .clear, in: RoundedRectangle(cornerRadius: 12))
             .contentShape(Rectangle())
@@ -232,13 +292,16 @@ struct GameView: View {
                 }.frame(maxWidth: .infinity)
             }
         }
-        .frame(height: layout.keypad.height)
+        .frame(height: accessibleLayout ? max(66, captionSize * 2) * 2 + layout.keyGap : layout.keypad.height)
     }
     private func number(_ digit: Int, game: Game, pitch: CGFloat, layout: GameplayLayout) -> some View {
         Button { enter(digit, fontSize: layout.keyFontSize) } label: {
-            Text("\(digit)").font(.system(size: layout.keyFontSize, weight: .medium, design: .rounded)).monospacedDigit()
+            Text("\(digit)")
+                .font(.system(size: accessibleLayout ? min(pitch - 12, captionSize * 2.4) : layout.keyFontSize,
+                              weight: .medium, design: .rounded)).monospacedDigit()
                 .foregroundStyle(palette.accent)
-                .frame(width: layout.keyWidth, height: layout.keyHeight)
+                .frame(width: accessibleLayout ? min(86, pitch - 8) : layout.keyWidth,
+                       height: accessibleLayout ? max(66, captionSize * 2) : layout.keyHeight)
                 .background(model.pencil ? palette.accent.opacity(0.1) : palette.surface,
                             in: RoundedRectangle(cornerRadius: 17))
                 .overlay {
@@ -260,6 +323,7 @@ struct GameView: View {
         HStack {
             if let error = model.saveError {
                 Text(error).foregroundStyle(palette.error)
+                    .accessibilityIdentifier("save-error")
             } else if model.errorCell != nil {
                 Label("Incorrect number", systemImage: "xmark.circle.fill")
                     .foregroundStyle(palette.error)
@@ -270,7 +334,8 @@ struct GameView: View {
                 Button("Continue in Classic") { model.continueClassic() }
             }
         }
-        .font(.system(size: 12)).lineLimit(1).minimumScaleFactor(0.75)
+        .font(.system(size: captionSize))
+        .fixedSize(horizontal: false, vertical: true)
     }
     private func canEnter(_ game: Game) -> Bool {
         guard let selected = model.selected else { return false }
@@ -284,7 +349,7 @@ struct GameView: View {
             model.enter(digit)
             return
         }
-        let result = model.enter(digit, deferFeedback: true)
+        let result = model.enter(digit, deferOutcome: true)
         guard result != .ignored else { return }
         let side = boardFrame.width / 9
         let source = CGPoint(x: key.midX, y: key.midY)
@@ -308,9 +373,8 @@ struct GameView: View {
                   let position = flights.firstIndex(where: { $0.id == flight.id }) else { return }
             if accepted {
                 flights.removeAll { $0.id == flight.id }
-                model.presentEntryFeedback(result, at: index)
+                if flights.isEmpty { model.finishEntryPresentation() }
             } else {
-                model.presentEntryFeedback(result, at: index, showOutcome: false)
                 flights[position].rejected = true
                 withAnimation(.linear(duration: 0.24)) { rejectionPulse += 1 }
                 try? await Task.sleep(for: .milliseconds(70))
@@ -324,7 +388,7 @@ struct GameView: View {
                 try? await Task.sleep(for: .milliseconds(240))
                 guard flights.contains(where: { $0.id == flight.id }) else { return }
                 flights.removeAll { $0.id == flight.id }
-                model.finishEntryPresentation()
+                if flights.isEmpty { model.finishEntryPresentation() }
             }
         }
     }
@@ -340,7 +404,7 @@ struct GameView: View {
             Image(systemName: "checkmark.seal").font(.system(size: 42, weight: .light)).foregroundStyle(palette.accent)
             Text("Puzzle complete").font(.title2.weight(.medium))
             if let game = model.game {
-                Text("\(game.puzzle.difficulty.title) · \(game.mode.title)\(model.preferences.showTimer ? " · \(time(game.elapsed))" : "")")
+                Text("\(game.puzzle.difficulty.title) · \(game.mode.title)\(model.preferences.showTimer ? " · \(game.elapsedText)" : "")")
                     .font(.subheadline).foregroundStyle(palette.secondary)
             }
             Button("Another puzzle") { model.showCompletion = false; showNewGame = true }
@@ -348,10 +412,6 @@ struct GameView: View {
             Button("Done") { model.showCompletion = false }.font(.subheadline)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity).background(palette.paper)
-    }
-    private func time(_ elapsed: TimeInterval) -> String {
-        let seconds = Int(elapsed)
-        return String(format: "%d:%02d", seconds / 60, seconds % 60)
     }
 }
 

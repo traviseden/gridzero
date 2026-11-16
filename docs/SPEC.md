@@ -1,6 +1,6 @@
 # GridZero shared product specification
 
-**Version 1.2 · November 15, 2026 · Applies to iOS/iPadOS, Android, and Web/PWA.**
+**Version 1.3 · November 16, 2026 · Applies to iOS/iPadOS, Android, and Web/PWA.**
 
 This is the product contract, not a promise that every release has been verified
 on every device. See [go-live gates](GO-LIVE.md), [data provenance](puzzle-data.md),
@@ -156,6 +156,8 @@ gameplay/history actions; replay is through confirmed Restart or New Puzzle.
 - Portrait phone board edge-to-edge when height permits; shrink on short windows.
   Tablet portrait centered, board capped at 720 points/CSS pixels, keypad at 480.
   Landscape places keypad beside board. Normal gameplay must not require scrolling.
+  iOS accessibility text sizes use a vertically scrolling gameplay layout so
+  enlarged labels, controls, and multiline errors remain reachable.
 - Keypad: `1 3 5 7 9` above centered `2 4 6 8`, staggered between top-row buttons.
 - Primary tools: Undo, Erase, Notes. Menu: New Puzzle, Settings, Classic-only Check
   Board, opt-in Fill Notes, Redo, Restart. Show difficulty and mode; optional timer.
@@ -181,6 +183,15 @@ browser/installed-PWA storage separation, and uninstall can lose local progress.
 No cross-platform save interoperability or backup service is currently provided.
 Android currently requests no Internet permission. Privacy pages and store
 disclosures must distinguish local gameplay from hosting/store-provider data.
+
+iOS recovery distinguishes missing files from read/validation failures. A failed
+restore offers Retry or New Puzzle; choosing a replacement preserves the original
+file before overwriting it. Reads, validation, encoding, and ordered atomic writes
+run off the UI thread. Active time uses a monotonic clock, checkpoints every 15
+seconds, and includes the final fractional interval before pausing. Restoration
+rejects ambiguous puzzles and completed history snapshots; arithmetic is bounded
+to 2,147,483,647 seconds/strikes, while legacy strike limits through 10 and unlimited
+remain supported. Invalid preference fields default individually.
 
 ## 7. Web / PWA contract
 

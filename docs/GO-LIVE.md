@@ -294,6 +294,17 @@ users, or require a GitHub paid subscription.
   11 web core tests, 27 browser tests (1 existing WebKit offline skip), site checks,
   and Android unit tests/lint/debug build. Physical Android control testing remains.
 
+### iOS adversarial-review fixes — November 16, 2026
+
+- iOS `1.0.0 (4)` archived at `build/GridZero-review-fixes-4.xcarchive`.
+  Signed archive verification passed; upload to App Store Connect succeeded.
+  Apple reported the package processing at upload completion.
+- Includes save recovery/validation, ordered background persistence, timer fixes,
+  resilient preferences, reliable entry feedback, and accessibility text support.
+  Verification details are in [the review follow-up](ios-review-fixes.md).
+- Owner installed this build through TestFlight and reported it works fine.
+  The remaining detailed physical-device release checks are still open.
+
 - [ ] Record released commit, collection hash/version, native build numbers, APK hash
   and signing fingerprint, and deployed web build.
 - [ ] Replace Coming soon only with actual approved links; keep browser Play available.

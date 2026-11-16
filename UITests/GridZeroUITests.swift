@@ -3,8 +3,14 @@ import GridZeroCore
 
 @MainActor
 final class GridZeroUITests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        continueAfterFailure = false
+        await MainActor.run { XCUIDevice.shared.orientation = .portrait }
+    }
+
     func testBoardNotesUndoAndAppearance() throws {
-        let app = XCUIApplication()
+        let app = fixtureApp()
         app.launch()
         let firstEmpty = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'cell-' AND label CONTAINS 'empty'")).firstMatch
         XCTAssertTrue(firstEmpty.waitForExistence(timeout: 10))
@@ -27,11 +33,7 @@ final class GridZeroUITests: XCTestCase {
         let last = app.buttons["cell-8"].frame
         XCTAssertEqual(first.minX, 0, accuracy: 2)
         XCTAssertEqual(last.maxX, app.frame.width, accuracy: 2)
-        app.buttons["Game menu"].tap()
-        let settings = app.buttons["Settings"]
-        XCTAssertTrue(settings.waitForExistence(timeout: 3))
-        // iOS 27's menu accessibility hit point can miss the visible row.
-        settings.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        selectMenu("Settings", in: app)
         XCTAssertTrue(app.buttons["Clay theme"].waitForExistence(timeout: 3))
         app.buttons["Clay theme"].tap()
         app.descendants(matching: .any).matching(identifier: "appearance-picker").firstMatch.tap()
@@ -45,18 +47,23 @@ final class GridZeroUITests: XCTestCase {
         XCTAssertEqual(strikeField.value as? String, "3")
         app.buttons["Done"].tap()
         XCTAssertTrue(app.buttons["number-1"].waitForExistence(timeout: 3))
+        app.buttons["number-3"].tap()
+        XCTAssertTrue(app.buttons[identifier].label.contains("notes: 3"))
+        // A scene transition flushes the ordered writer before relaunch.
+        XCUIDevice.shared.press(.home)
         app.terminate()
         app.launch()
         XCTAssertTrue(app.buttons[identifier].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons[identifier].label.contains("notes: 3"))
+        app.buttons["tool-undo"].tap()
         XCTAssertFalse(app.buttons[identifier].label.contains("notes:"))
     }
 
     func testClassicGeneratedPuzzleAndExplicitCheck() throws {
-        let app = XCUIApplication()
+        let app = fixtureApp()
         app.launch()
         XCTAssertTrue(app.buttons["Game menu"].waitForExistence(timeout: 5))
-        app.buttons["Game menu"].tap()
-        app.buttons["New Puzzle"].tap()
+        selectMenu("New Puzzle", in: app)
         XCTAssertTrue(app.buttons["Classic"].waitForExistence(timeout: 3))
         app.buttons["Classic"].tap()
         app.descendants(matching: .any).matching(identifier: "source-picker").firstMatch.tap()
@@ -66,7 +73,7 @@ final class GridZeroUITests: XCTestCase {
         app.alerts.buttons["Done"].tap()
         XCTAssertTrue(app.buttons["Classic"].isSelected)
         XCTAssertTrue(app.buttons["Start Puzzle"].isHittable)
-        app.buttons["Start Puzzle"].tap()
+        tapCenter(app.buttons["Start Puzzle"])
         XCTAssertTrue(app.buttons["Start Puzzle"].waitForNonExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["Classic"].waitForExistence(timeout: 20))
         let empty = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'cell-' AND label CONTAINS 'empty'")).firstMatch
@@ -75,25 +82,23 @@ final class GridZeroUITests: XCTestCase {
         empty.tap()
         app.buttons["number-1"].tap()
         XCTAssertTrue(app.buttons[identifier].label.hasSuffix(", 1"))
-        app.buttons["Game menu"].tap()
-        app.buttons["Check Board"].tap()
+        selectMenu("Check Board", in: app)
         XCTAssertTrue(app.alerts.firstMatch.waitForExistence(timeout: 3))
         app.alerts.buttons["OK"].tap()
     }
 
     func testCompactChallengeEntryAndRejection() throws {
-        let app = XCUIApplication()
+        let app = fixtureApp()
         app.launch()
         XCTAssertTrue(app.buttons["Game menu"].waitForExistence(timeout: 5))
-        app.buttons["Game menu"].tap()
-        app.buttons["New Puzzle"].tap()
+        selectMenu("New Puzzle", in: app)
         XCTAssertTrue(app.buttons["Challenge"].waitForExistence(timeout: 3))
         app.buttons["Challenge"].tap()
         app.descendants(matching: .any).matching(identifier: "difficulty-picker").firstMatch.tap()
         app.buttons["Easy"].tap()
         app.descendants(matching: .any).matching(identifier: "source-picker").firstMatch.tap()
         app.buttons["Puzzle Collection"].tap()
-        app.buttons["Start Puzzle"].tap()
+        tapCenter(app.buttons["Start Puzzle"])
         XCTAssertTrue(app.buttons["Start Puzzle"].waitForNonExistence(timeout: 20))
         XCTAssertTrue(app.staticTexts["Challenge"].waitForExistence(timeout: 10))
         assertEntireGameFits(app)
@@ -122,15 +127,56 @@ final class GridZeroUITests: XCTestCase {
         assertEntireGameFits(app)
 
         // The last strike's alert must wait until the rejection flight completes.
-        if strikes.label.contains("of 3") {
-            app.buttons["number-\(wrong)"].tap()
-            app.buttons["number-\(wrong)"].tap()
-            XCTAssertTrue(app.alerts["Strike limit reached"].waitForExistence(timeout: 3))
-            app.alerts.buttons["Retry This Puzzle"].tap()
-            XCTAssertTrue(app.alerts.firstMatch.waitForNonExistence(timeout: 3))
-            XCTAssertTrue(strikes.label.hasPrefix("0"))
-            XCTAssertTrue(cell.label.contains("empty"))
-        }
+        XCTAssertTrue(strikes.label.contains("of 3"))
+        app.buttons["number-\(wrong)"].tap()
+        app.buttons["number-\(wrong)"].tap()
+        XCTAssertTrue(app.alerts["Strike limit reached"].waitForExistence(timeout: 3))
+        app.alerts.buttons["Retry This Puzzle"].tap()
+        XCTAssertTrue(app.alerts.firstMatch.waitForNonExistence(timeout: 3))
+        XCTAssertTrue(strikes.label.hasPrefix("0"))
+        XCTAssertTrue(cell.label.contains("empty"))
+    }
+
+    func testCorruptSaveRequiresExplicitRecovery() throws {
+        let app = fixtureApp()
+        app.launchEnvironment["GRIDZERO_TEST_SAVE"] = "corrupt"
+        app.launch()
+        let recovery = app.alerts["Couldn't restore your game"]
+        XCTAssertTrue(recovery.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["cell-0"].exists)
+        recovery.buttons["Retry"].tap()
+        XCTAssertTrue(recovery.waitForExistence(timeout: 5))
+        recovery.buttons["New Puzzle"].tap()
+        XCTAssertTrue(app.buttons["Start Puzzle"].waitForExistence(timeout: 5))
+        tapCenter(app.buttons["Start Puzzle"])
+        XCTAssertTrue(app.buttons["cell-0"].waitForExistence(timeout: 15))
+        XCTAssertFalse(recovery.exists)
+        XCUIDevice.shared.press(.home)
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["cell-0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(recovery.exists)
+    }
+
+    func testRestartAlertPausesTimer() throws {
+        let app = fixtureApp()
+        app.launchEnvironment["GRIDZERO_TEST_TIMER"] = "1"
+        app.launch()
+        let timer = app.staticTexts["elapsed-time"]
+        XCTAssertTrue(timer.waitForExistence(timeout: 10))
+        selectMenu("Restart Puzzle", in: app)
+        XCTAssertTrue(app.alerts["Restart this puzzle?"].waitForExistence(timeout: 3))
+        let paused = timer.label
+        // Wait via an XCTest expectation rather than blocking the app's run loop.
+        let changes = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            MainActor.assumeIsolated { timer.label != paused }
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [changes], timeout: 3), .timedOut)
+        app.alerts.buttons["Cancel"].tap()
+        let resumes = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            MainActor.assumeIsolated { timer.label != paused }
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [resumes], timeout: 4), .completed)
     }
 
     private func assertEntireGameFits(_ app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {

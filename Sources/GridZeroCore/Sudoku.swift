@@ -211,17 +211,26 @@ public enum PuzzleFactory {
                           source: .collection, rating: Double(fields[3]))
         }
         let unseen = records.filter { !excluding.contains($0.id) }
-        guard let record = (unseen.isEmpty ? records : unseen).randomElement(),
-              let solution = Sudoku.solutions(record.givens, limit: 1).first else { throw PuzzleError.unavailable }
+        guard let record = (unseen.isEmpty ? records : unseen).randomElement() else { throw PuzzleError.unavailable }
+        let solutions = Sudoku.solutions(record.givens)
+        try Task.checkCancellation()
+        guard solutions.count == 1, let solution = solutions.first else { throw PuzzleError.unavailable }
         return Puzzle(id: record.id, givens: record.givens, solution: solution,
                       difficulty: difficulty, source: .collection, rating: record.rating)
     }
 
     public static func generate(_ difficulty: Difficulty, emptySquares: Int = 45) throws -> Puzzle {
+        try generate(difficulty, emptySquares: emptySquares, attemptStarted: {})
+    }
+
+    // Internal progress seam also lets tests cancel a real in-flight attempt.
+    static func generate(_ difficulty: Difficulty, emptySquares: Int,
+                         attemptStarted: @Sendable () -> Void) throws -> Puzzle {
         let deadline = Date().addingTimeInterval(15)
         for _ in 0..<100 {
             try Task.checkCancellation()
             guard Date() < deadline, let solution = Sudoku.randomSolution() else { break }
+            attemptStarted()
             var board = solution
             let target = difficulty == .custom ? min(60, max(20, emptySquares)) :
                 [.easy: 42, .medium: 49, .hard: 54, .expert: 57][difficulty, default: 45]
@@ -236,9 +245,11 @@ public enum PuzzleFactory {
             }
             guard removed == target else { continue }
             if difficulty != .custom && Sudoku.grade(board) != difficulty { continue }
+            try Task.checkCancellation()
             return Puzzle(id: UUID().uuidString, givens: board, solution: solution,
                           difficulty: difficulty, source: .generated)
         }
+        try Task.checkCancellation()
         throw PuzzleError.generationLimit
     }
 }

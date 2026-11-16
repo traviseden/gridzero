@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct GridZeroApp: App {
-    @State private var model = GameModel()
+    @State private var model = launchModel()
     var body: some Scene {
         WindowGroup {
             GameView(model: model)
@@ -13,10 +13,22 @@ struct GridZeroApp: App {
                 .background {
                     if testViewport != nil { ViewportProbe() }
                 }
+                .transformEnvironment(\.dynamicTypeSize) { size in
+                    if ProcessInfo.processInfo.environment["GRIDZERO_TEST_ACCESSIBILITY_TEXT"] == "1" {
+                        size = .accessibility5
+                    }
+                }
                 #endif
                 .preferredColorScheme(model.preferences.appearance.scheme(
                     at: model.clock, lightAt: model.preferences.lightAt, darkAt: model.preferences.darkAt))
         }
+    }
+
+    private static func launchModel() -> GameModel {
+        #if DEBUG
+        if let model = UITestFixture.makeModel() { return model }
+        #endif
+        return GameModel()
     }
 
     #if DEBUG

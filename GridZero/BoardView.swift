@@ -99,6 +99,6 @@ struct BoardView: View {
             return "\(location), \(game.board.values[index])\(game.puzzle.givens[index] != 0 ? ", starting clue" : "")\(model.checkedCells.contains(index) ? ", incorrect" : "")"
         }
         let notes = Sudoku.digits(game.board.notes[index]).map(String.init).joined(separator: ", ")
-        return "\(location), empty\(notes.isEmpty ? "" : ", notes: \(notes)")"
+        return "\(location), empty\(notes.isEmpty ? "" : ", notes: \(notes)")\(model.errorCell == index ? ", incorrect entry" : "")"
     }
 }

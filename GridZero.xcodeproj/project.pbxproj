@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D353B4647D38CFA33067C7E /* GameStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B730185BE8AF2BA0384B61 /* GameStoreTests.swift */; };
 		1E1D92E78649733A77F26D11 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864621FBF2258103C178137A /* SettingsView.swift */; };
 		23314E7824A4642CEF6C4A84 /* BoardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D2AC456E28FEE31542979A7 /* BoardView.swift */; };
 		2DDE28A9FA487435DDAB8424 /* Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2702A112248692F4547127ED /* Appearance.swift */; };
@@ -16,10 +17,16 @@
 		4222CAFAFD1DE2BFF8DB9701 /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53CBD73D8991CDD2A84B38A8 /* GameModel.swift */; };
 		423F2EC657E6E2893B65B4BA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E7C91FC9DFC348B38E030736 /* Assets.xcassets */; };
 		43E00D93D11AA7DC82892824 /* LayoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5845F9AB5924A2D8B9C203 /* LayoutUITests.swift */; };
+		457EE3F01D65066446C4D77E /* UITestFixture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C92282427ED6B403F54D6DB1 /* UITestFixture.swift */; };
 		49272249EFFB0AA7408A2767 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2DFB8C144BD83AD5A6CC46B /* GameView.swift */; };
+		68800CD1BA3F6016CA2EDFB6 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92ADB3B48594D1ADFDBA168C /* Preferences.swift */; };
+		7C011155764FE7DF25A92A65 /* GridZeroCore in Frameworks */ = {isa = PBXBuildFile; productRef = B541D3570BC9C3257B350ADA /* GridZeroCore */; };
 		86225E3E054888A5F0E367B3 /* GridZeroCore in Frameworks */ = {isa = PBXBuildFile; productRef = A12F3288566EED9D81ACE339 /* GridZeroCore */; };
 		A87C685050BF3D3FF3EDC463 /* NewGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5DD4165AC7F754A0CDAA1EB /* NewGameView.swift */; };
+		B3D3BCD568343B564730BD01 /* TestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6864CBD156D023D24D2D1089 /* TestSupport.swift */; };
 		C1A0576341F00DA2FBCF8B44 /* GridZeroCore in Frameworks */ = {isa = PBXBuildFile; productRef = B656C52C6279841E9B9DE9A9 /* GridZeroCore */; };
+		CF45B1A6E00AE81ED1C2F8D5 /* GameStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 193C6B4D737907E7F1492391 /* GameStore.swift */; };
+		E43FE2783A0CF6E8E3D778AB /* GameModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD5BEB748D1D2D59655B43AA /* GameModelTests.swift */; };
 		EE6893F5B1604C48D016C8C3 /* GridZeroUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A31C1EEAB9C39772AF89901 /* GridZeroUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -31,26 +38,40 @@
 			remoteGlobalIDString = 3ECC10CD5DE1D012F72A98C6;
 			remoteInfo = GridZero;
 		};
+		A8258891DAFF7892C6749D31 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7CF39F476C56EC9C25022496 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3ECC10CD5DE1D012F72A98C6;
+			remoteInfo = GridZero;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0405A859090E5C26E906BCDE /* GridZero.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GridZero.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		16B730185BE8AF2BA0384B61 /* GameStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStoreTests.swift; sourceTree = "<group>"; };
+		193C6B4D737907E7F1492391 /* GameStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameStore.swift; sourceTree = "<group>"; };
 		1C5845F9AB5924A2D8B9C203 /* LayoutUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutUITests.swift; sourceTree = "<group>"; };
 		2702A112248692F4547127ED /* Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Appearance.swift; sourceTree = "<group>"; };
 		46FC5F7186CD4D851AE0330C /* gridzero */ = {isa = PBXFileReference; lastKnownFileType = folder; name = gridzero; path = .; sourceTree = SOURCE_ROOT; };
 		4D2AC456E28FEE31542979A7 /* BoardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardView.swift; sourceTree = "<group>"; };
 		53CBD73D8991CDD2A84B38A8 /* GameModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
+		5762B63FAE94464752F0C8D5 /* GridZeroModelTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GridZeroModelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5F44EB01EB2096A28B9ED34A /* GridZeroUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = GridZeroUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6864CBD156D023D24D2D1089 /* TestSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSupport.swift; sourceTree = "<group>"; };
 		68778EBDACBCF04D309C11F6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		864621FBF2258103C178137A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8730C964A8C2E7BED8FA3E0B /* GameLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameLayout.swift; sourceTree = "<group>"; };
+		92ADB3B48594D1ADFDBA168C /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		9A31C1EEAB9C39772AF89901 /* GridZeroUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridZeroUITests.swift; sourceTree = "<group>"; };
 		A0C007BB8128C4D370061507 /* GridZeroApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridZeroApp.swift; sourceTree = "<group>"; };
 		A5DD4165AC7F754A0CDAA1EB /* NewGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewGameView.swift; sourceTree = "<group>"; };
 		B2DFB8C144BD83AD5A6CC46B /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		C072ECD564D610B64E12C1EF /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		C19ED56747866D58DF19E121 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		C92282427ED6B403F54D6DB1 /* UITestFixture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestFixture.swift; sourceTree = "<group>"; };
 		E7C91FC9DFC348B38E030736 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FD5BEB748D1D2D59655B43AA /* GameModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModelTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +91,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		32D8761FB07C69FD0403C35E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7C011155764FE7DF25A92A65 /* GridZeroCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -81,12 +110,15 @@
 				4D2AC456E28FEE31542979A7 /* BoardView.swift */,
 				8730C964A8C2E7BED8FA3E0B /* GameLayout.swift */,
 				53CBD73D8991CDD2A84B38A8 /* GameModel.swift */,
+				193C6B4D737907E7F1492391 /* GameStore.swift */,
 				B2DFB8C144BD83AD5A6CC46B /* GameView.swift */,
 				A0C007BB8128C4D370061507 /* GridZeroApp.swift */,
 				68778EBDACBCF04D309C11F6 /* Info.plist */,
 				A5DD4165AC7F754A0CDAA1EB /* NewGameView.swift */,
+				92ADB3B48594D1ADFDBA168C /* Preferences.swift */,
 				C19ED56747866D58DF19E121 /* PrivacyInfo.xcprivacy */,
 				864621FBF2258103C178137A /* SettingsView.swift */,
+				C92282427ED6B403F54D6DB1 /* UITestFixture.swift */,
 			);
 			path = GridZero;
 			sourceTree = "<group>";
@@ -103,6 +135,7 @@
 		2E51088BDEA0A21BE80D29E1 = {
 			isa = PBXGroup;
 			children = (
+				F136C3B8FB1C633ADF1FE18D /* AppTests */,
 				1C04AB1D37DE63236A2721FF /* GridZero */,
 				2002DCB716C19C99DDA6400B /* gridzero */,
 				DD181DB21D3BFF7660EF570F /* Packages */,
@@ -116,6 +149,7 @@
 			children = (
 				9A31C1EEAB9C39772AF89901 /* GridZeroUITests.swift */,
 				1C5845F9AB5924A2D8B9C203 /* LayoutUITests.swift */,
+				6864CBD156D023D24D2D1089 /* TestSupport.swift */,
 			);
 			path = UITests;
 			sourceTree = "<group>";
@@ -124,6 +158,7 @@
 			isa = PBXGroup;
 			children = (
 				0405A859090E5C26E906BCDE /* GridZero.app */,
+				5762B63FAE94464752F0C8D5 /* GridZeroModelTests.xctest */,
 				5F44EB01EB2096A28B9ED34A /* GridZeroUITests.xctest */,
 			);
 			name = Products;
@@ -135,6 +170,15 @@
 				46FC5F7186CD4D851AE0330C /* gridzero */,
 			);
 			name = Packages;
+			sourceTree = "<group>";
+		};
+		F136C3B8FB1C633ADF1FE18D /* AppTests */ = {
+			isa = PBXGroup;
+			children = (
+				FD5BEB748D1D2D59655B43AA /* GameModelTests.swift */,
+				16B730185BE8AF2BA0384B61 /* GameStoreTests.swift */,
+			);
+			path = AppTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -180,6 +224,26 @@
 			productReference = 0405A859090E5C26E906BCDE /* GridZero.app */;
 			productType = "com.apple.product-type.application";
 		};
+		DB255357DFB33C0DAA88D0ED /* GridZeroModelTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7E44214799AE414F3565A5F7 /* Build configuration list for PBXNativeTarget "GridZeroModelTests" */;
+			buildPhases = (
+				E0129341A924EC7E9DE9E125 /* Sources */,
+				32D8761FB07C69FD0403C35E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5035CC180C83E81AD2ABA6B1 /* PBXTargetDependency */,
+			);
+			name = GridZeroModelTests;
+			packageProductDependencies = (
+				B541D3570BC9C3257B350ADA /* GridZeroCore */,
+			);
+			productName = GridZeroModelTests;
+			productReference = 5762B63FAE94464752F0C8D5 /* GridZeroModelTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -194,6 +258,9 @@
 						TestTargetID = 3ECC10CD5DE1D012F72A98C6;
 					};
 					3ECC10CD5DE1D012F72A98C6 = {
+						ProvisioningStyle = Automatic;
+					};
+					DB255357DFB33C0DAA88D0ED = {
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -216,6 +283,7 @@
 			projectRoot = "";
 			targets = (
 				3ECC10CD5DE1D012F72A98C6 /* GridZero */,
+				DB255357DFB33C0DAA88D0ED /* GridZeroModelTests */,
 				189560679E3159CA79A2FE6F /* GridZeroUITests */,
 			);
 		};
@@ -242,10 +310,13 @@
 				23314E7824A4642CEF6C4A84 /* BoardView.swift in Sources */,
 				38F75CA7A29814E2BAE750A4 /* GameLayout.swift in Sources */,
 				4222CAFAFD1DE2BFF8DB9701 /* GameModel.swift in Sources */,
+				CF45B1A6E00AE81ED1C2F8D5 /* GameStore.swift in Sources */,
 				49272249EFFB0AA7408A2767 /* GameView.swift in Sources */,
 				3A1D58CE673C0F6C99FB916E /* GridZeroApp.swift in Sources */,
 				A87C685050BF3D3FF3EDC463 /* NewGameView.swift in Sources */,
+				68800CD1BA3F6016CA2EDFB6 /* Preferences.swift in Sources */,
 				1E1D92E78649733A77F26D11 /* SettingsView.swift in Sources */,
+				457EE3F01D65066446C4D77E /* UITestFixture.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -255,12 +326,27 @@
 			files = (
 				EE6893F5B1604C48D016C8C3 /* GridZeroUITests.swift in Sources */,
 				43E00D93D11AA7DC82892824 /* LayoutUITests.swift in Sources */,
+				B3D3BCD568343B564730BD01 /* TestSupport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E0129341A924EC7E9DE9E125 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E43FE2783A0CF6E8E3D778AB /* GameModelTests.swift in Sources */,
+				0D353B4647D38CFA33067C7E /* GameStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5035CC180C83E81AD2ABA6B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3ECC10CD5DE1D012F72A98C6 /* GridZero */;
+			targetProxy = A8258891DAFF7892C6749D31 /* PBXContainerItemProxy */;
+		};
 		5326DA5C18CFBEE932191C13 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 3ECC10CD5DE1D012F72A98C6 /* GridZero */;
@@ -303,12 +389,29 @@
 			};
 			name = Release;
 		};
+		18819DFD8795DC64A7F32E0B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = win.gridzero.GridZeroModelTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GridZero.app/GridZero";
+			};
+			name = Debug;
+		};
 		679426F7F292EAD9E6059A9B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GridZero/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GridZero;
@@ -327,6 +430,23 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		7374904BBD21EECB0CF4B95A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = win.gridzero.GridZeroModelTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/GridZero.app/GridZero";
+			};
+			name = Release;
 		};
 		7F81224794B91598F08BA6B5 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -457,7 +577,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GridZero/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = GridZero;
@@ -498,6 +618,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		7E44214799AE414F3565A5F7 /* Build configuration list for PBXNativeTarget "GridZeroModelTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18819DFD8795DC64A7F32E0B /* Debug */,
+				7374904BBD21EECB0CF4B95A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		8B70EE58D27C42211091561A /* Build configuration list for PBXNativeTarget "GridZero" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -518,6 +647,10 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		A12F3288566EED9D81ACE339 /* GridZeroCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = GridZeroCore;
+		};
+		B541D3570BC9C3257B350ADA /* GridZeroCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = GridZeroCore;
 		};

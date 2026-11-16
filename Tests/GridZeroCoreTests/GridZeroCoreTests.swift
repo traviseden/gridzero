@@ -114,11 +114,81 @@ private func puzzle() -> Puzzle {
 }
 
 @Test func generationRespectsCancellation() async {
+    let started = AsyncStream<Void>.makeStream()
+    let resume = DispatchSemaphore(value: 0)
     let task = Task.detached {
-        try await Task.sleep(for: .milliseconds(20))
-        return try PuzzleFactory.generate(.expert)
+        defer { started.continuation.finish() }
+        return try PuzzleFactory.generate(.expert, emptySquares: 45) {
+            started.continuation.yield(())
+            resume.wait()
+        }
     }
+    for await _ in started.stream { break }
     task.cancel()
+    resume.signal()
+    started.continuation.finish()
     do { _ = try await task.value; Issue.record("Cancelled generation returned a puzzle") }
     catch { #expect(error is CancellationError) }
+}
+
+private func mutatedSave(_ mutation: (inout [String: Any]) -> Void) throws -> Game {
+    let data = try JSONEncoder().encode(Game(puzzle: puzzle()))
+    var object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    mutation(&object)
+    return try JSONDecoder().decode(Game.self, from: JSONSerialization.data(withJSONObject: object))
+}
+
+@Test func savesRejectUnsafeNumbersAndPreserveLegacyLimits() throws {
+    for elapsed in [-1.0, 1e30] {
+        #expect(try !mutatedSave { $0["elapsed"] = elapsed }.isValidSave)
+    }
+    #expect(try !mutatedSave { $0["strikes"] = Int.max; $0["strikeLimit"] = 0 }.isValidSave)
+    #expect(try !mutatedSave { $0["strikeLimit"] = Int.max }.isValidSave)
+    for limit in [0, 3, 10] {
+        #expect(try mutatedSave { $0["strikeLimit"] = limit }.isValidSave)
+    }
+    var unlimited = try mutatedSave { $0["strikeLimit"] = 0; $0["strikes"] = Game.maximumStrikes }
+    #expect(unlimited.isValidSave)
+    #expect(unlimited.enter(puzzle().solution[2] % 9 + 1, at: 2, pencil: false) == .strike)
+    #expect(unlimited.strikes == Game.maximumStrikes)
+    var game = Game(puzzle: puzzle())
+    for elapsed in [Double.infinity, Double.nan, -1, 1e30] {
+        game.elapsed = elapsed
+        #expect(!game.elapsedText.isEmpty)
+    }
+    game.elapsed = 65
+    #expect(game.elapsedText == "1:05")
+}
+
+@Test func savesRejectCompletedHistoryAndAmbiguousPuzzles() throws {
+    let completed = ["values": puzzle().solution, "notes": Array(repeating: 0, count: 81)]
+    for key in ["undoStack", "redoStack"] {
+        #expect(try !mutatedSave { $0[key] = [completed] }.isValidSave)
+    }
+    let ambiguous = Puzzle(id: "ambiguous", givens: Array(repeating: 0, count: 81),
+                           solution: puzzle().solution, difficulty: .custom, source: .generated)
+    #expect(!Game(puzzle: ambiguous).isValidSave)
+    let state = ["values": example, "notes": Array(repeating: 0, count: 81)]
+    #expect(try !mutatedSave {
+        $0["undoStack"] = Array(repeating: state, count: 200)
+        $0["redoStack"] = Array(repeating: state, count: 200)
+    }.isValidSave)
+}
+
+@Test func fullHistoryRoundTripsAndCompletionLocksActions() throws {
+    var game = Game(puzzle: puzzle())
+    for _ in 0..<350 { game.enter(1, at: 2, pencil: true) }
+    #expect(game.undoStack.count == 300)
+    for _ in 0..<150 { game.undo() }
+    #expect(game.isValidSave)
+    let restored = try JSONDecoder().decode(Game.self, from: JSONEncoder().encode(game))
+    #expect(restored.isValidSave)
+    for _ in 0..<150 { game.redo() }
+    #expect(game.isValidSave)
+    for index in 0..<81 where example[index] == 0 { game.enter(puzzle().solution[index], at: index, pencil: false) }
+    let completed = game.board
+    game.undo(); game.redo(); game.erase(at: 2); game.fillNotes()
+    #expect(game.finished)
+    #expect(game.board == completed)
+    #expect(game.isValidSave)
 }

@@ -9,7 +9,7 @@ final class LayoutUITests: XCTestCase {
 
     func testPortraitAndLandscapeLayouts() throws {
         XCUIDevice.shared.orientation = .portrait
-        let app = XCUIApplication()
+        let app = fixtureApp()
         app.launch()
         defer { XCUIDevice.shared.orientation = .portrait }
         XCTAssertTrue(app.buttons["cell-0"].waitForExistence(timeout: 10))
@@ -36,7 +36,7 @@ final class LayoutUITests: XCTestCase {
 
     func testResizableTabletViewports() throws {
         XCUIDevice.shared.orientation = .portrait
-        let probe = XCUIApplication()
+        let probe = fixtureApp()
         probe.launch()
         let nativeBounds = probe.frame
         probe.terminate()
@@ -51,7 +51,7 @@ final class LayoutUITests: XCTestCase {
         ]
         for (width, height, orientation) in sizes {
             XCUIDevice.shared.orientation = orientation
-            let app = XCUIApplication()
+            let app = fixtureApp()
             app.launchEnvironment["GRIDZERO_TEST_WIDTH"] = "\(width)"
             app.launchEnvironment["GRIDZERO_TEST_HEIGHT"] = "\(height)"
             app.launch()
@@ -64,6 +64,27 @@ final class LayoutUITests: XCTestCase {
             app.terminate()
         }
         XCUIDevice.shared.orientation = .portrait
+    }
+
+    func testAccessibilityTextKeepsControlsReachable() throws {
+        let app = fixtureApp()
+        app.launchEnvironment["GRIDZERO_TEST_ACCESSIBILITY_TEXT"] = "1"
+        app.launch()
+        XCTAssertTrue(app.buttons["cell-0"].waitForExistence(timeout: 10))
+        // SwiftUI can inherit the root's game-surface identifier onto the scroll view.
+        let scroll = app.scrollViews.firstMatch
+        XCTAssertTrue(scroll.exists, app.debugDescription)
+        // Existing labels grow with Dynamic Type; nothing is reduced to fit a fixed footer.
+        let notes = app.buttons["tool-notes"]
+        for _ in 0..<6 where !notes.isHittable { scroll.swipeUp() }
+        XCTAssertTrue(notes.isHittable)
+        XCTAssertGreaterThan(notes.frame.height, 44)
+        notes.tap()
+        for _ in 0..<6 where !app.buttons["number-2"].isHittable { scroll.swipeUp() }
+        XCTAssertTrue(app.buttons["number-2"].isHittable)
+        app.buttons["number-2"].tap()
+        for _ in 0..<6 where !app.buttons["cell-2"].isHittable { scroll.swipeDown() }
+        XCTAssertTrue(app.buttons["cell-2"].label.contains("notes: 2"))
     }
 
     private func exerciseNotes(_ app: XCUIApplication) {

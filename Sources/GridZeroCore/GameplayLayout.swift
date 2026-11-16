@@ -17,10 +17,11 @@ public struct GameplayLayout: Sendable {
     public let keyHeight: CGFloat
     public let keyGap: CGFloat
     public let keyFontSize: CGFloat
+    private let textScale: CGFloat
 
     public var toolHeight: CGFloat { tools.height }
-    public var toolWidth: CGFloat { min(84, (tools.width - toolSpacing * 2) / 3) }
-    public var toolSpacing: CGFloat { min(28, max(8, (tools.width - 204) / 2)) }
+    public var toolWidth: CGFloat { min(84 * textScale, (tools.width - toolSpacing * 2) / 3) }
+    public var toolSpacing: CGFloat { textScale > 1 ? 8 : min(28, max(8, (tools.width - 204) / 2)) }
     public var keyWidth: CGFloat { min(86, max(44, keypad.width / 5 - 8)) }
     public var regions: [CGRect] { [header, metadata, board, tools, keypad, status] }
 
@@ -33,7 +34,8 @@ public struct GameplayLayout: Sendable {
                       width: keyWidth, height: keyHeight)
     }
 
-    public init(size: CGSize, isTablet: Bool) {
+    public init(size: CGSize, isTablet: Bool, textScale: CGFloat = 1, expandedStatus: Bool = false) {
+        self.textScale = textScale
         let width = max(1, size.width)
         let height = max(1, size.height)
         let landscape = width >= 600 && width > height * 1.08
@@ -43,9 +45,9 @@ public struct GameplayLayout: Sendable {
             tight = height < 420
             let margin: CGFloat = compact ? 12 : 24
             let top: CGFloat = compact ? 4 : 16
-            let headerHeight: CGFloat = compact ? 44 : 48
-            let headerGap: CGFloat = compact ? 8 : 20
-            let metadataHeight: CGFloat = compact ? 28 : 36
+            let headerHeight: CGFloat = max(compact ? 44 : 48, 32 * textScale)
+            let headerGap: CGFloat = compact ? (textScale > 1 ? 0 : 8) : 20
+            let metadataHeight: CGFloat = (compact ? (tight && textScale > 1 ? 24 : 28) : 36) * textScale
             let columnGap: CGFloat = compact ? 20 : 32
             let panelWidth = min(isTablet && !compact ? 360 : 280, max(260, width * 0.34))
             let usableRowHeight = height - top - headerHeight - headerGap - margin
@@ -60,11 +62,13 @@ public struct GameplayLayout: Sendable {
             keyHeight = tight ? 44 : compact ? 52 : 66
             keyGap = compact ? 8 : 10
             keyFontSize = compact ? 27 : 32
-            let toolHeight: CGFloat = compact ? 44 : 52
-            let gap: CGFloat = compact ? 12 : 20
-            let statusHeight: CGFloat = 18
-            let panelHeight = metadataHeight + gap + toolHeight + gap + keyHeight * 2 + keyGap + gap + statusHeight
-            let panelTop = min(height - margin - panelHeight, max(rowTop, board.midY - panelHeight / 2))
+            let toolHeight: CGFloat = (compact ? 44 : 52) + 16 * (textScale - 1)
+            let contentHeight = metadataHeight + toolHeight + keyHeight * 2 + keyGap
+            let statusHeight = min((expandedStatus ? 54 : 18) * textScale,
+                                   max(18 * textScale, usableRowHeight - contentHeight))
+            let gap = max(0, min(compact ? 12 : 20, (usableRowHeight - contentHeight - statusHeight) / 3))
+            let panelHeight = contentHeight + gap * 3 + statusHeight
+            let panelTop = max(rowTop, min(height - margin - panelHeight, board.midY - panelHeight / 2))
             let panelX = board.maxX + columnGap
             metadata = CGRect(x: panelX, y: panelTop, width: panelWidth, height: metadataHeight)
             tools = CGRect(x: panelX, y: metadata.maxY + gap, width: panelWidth, height: toolHeight)
@@ -80,21 +84,22 @@ public struct GameplayLayout: Sendable {
 
             let top: CGFloat = tight ? 0 : spaciousTablet ? 16 : compact ? 4 : 8
             let bottom: CGFloat = tight ? 4 : spaciousTablet ? 16 : compact ? 4 : 8
-            let headerHeight: CGFloat = spaciousTablet && !compact ? 48 : 44
+            let headerHeight: CGFloat = max(spaciousTablet && !compact ? 48 : 44, 32 * textScale)
             let headerGap: CGFloat = tight ? 4 : compact ? 8 : spaciousTablet ? 20 : 16
-            let metadataHeight: CGFloat = tight ? 24 : 34
+            let metadataHeight: CGFloat = (tight ? 24 : 34) * textScale
             let boardGap: CGFloat = tight ? 4 : compact ? 8 : spaciousTablet ? 16 : 12
             let toolsGap: CGFloat = tight ? 8 : compact ? 12 : spaciousTablet ? 20 : 16
             let keysGap: CGFloat = tight ? 6 : compact ? 8 : spaciousTablet ? 16 : 12
             let statusGap: CGFloat = tight ? 4 : compact ? 6 : 8
-            let toolHeight: CGFloat = compact ? 44 : spaciousTablet ? 52 : 48
+            let toolHeight: CGFloat = (compact ? 44 : spaciousTablet ? 52 : 48) + 16 * (textScale - 1)
             keyHeight = tight ? 44 : compact ? 52 : spaciousTablet ? 64 : 56
             keyGap = tight ? 6 : 8
             keyFontSize = tight ? 26 : spaciousTablet ? 32 : 29
-            let statusHeight: CGFloat = 18
-            let chrome = top + headerHeight + headerGap + metadataHeight + boardGap + toolsGap + toolHeight +
-                keysGap + keyHeight * 2 + keyGap + statusGap + statusHeight + bottom
-            let side = min(nominalSide, height - chrome)
+            let fixedChrome = top + headerHeight + headerGap + metadataHeight + boardGap + toolsGap + toolHeight +
+                keysGap + keyHeight * 2 + keyGap + statusGap + bottom
+            let statusHeight = min((expandedStatus ? 54 : 18) * textScale, max(1, height - fixedChrome - 1))
+            let chrome = fixedChrome + statusHeight
+            let side = max(1, min(nominalSide, height - chrome))
             let extra = max(0, height - side - chrome)
             // Center a tablet's notebook as a whole; keep phone keys near the thumb.
             let groupTop = spaciousTablet ? extra / 2 : 0
