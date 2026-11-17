@@ -85,6 +85,11 @@ Latest pacing adjustment: travel is 350ms; recoil remains 450ms.
 Release checks for the 350ms build: Astro check/build, link validation, all 11
 core tests, and 33 browser tests passed (one existing WebKit offline skip).
 
+Released `77e7057` to GitHub and Cloudflare Pages at
+https://0ebc2a10.gridzero.pages.dev / https://gridzero.win/.
+Live assets match the build; production WebKit gameplay/persistence smoke passed.
+See `GO-LIVE.md` for deployment details and remaining physical-device checks.
+
 ## Local network development
 
 `npm --prefix site run dev` listens on the LAN and prints a lobby QR code for
