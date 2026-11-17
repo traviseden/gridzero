@@ -19,6 +19,41 @@ npm run test:ui
 Playwright serves `site/dist` through `tools/serve_site.py`, including the real
 Cloudflare `_headers` security policy. Tests use Chromium and iPhone WebKit.
 
+## Live phone development
+
+Run `npm --prefix site run dev` on the Mac. Astro listens on the LAN and prints
+a terminal QR code for `/play/` on each external IPv4 address. Connect phones to
+the same Wi-Fi; Astro live-reloads edits. If Astro starts in background mode,
+use `cd site && npx astro dev logs` to view the QR code, and `npx astro dev stop`
+to stop it. Plain LAN HTTP supports layout/gameplay testing; install/offline
+verification requires HTTPS (or localhost on the device itself).
+
+### November 17, 2026 checkpoint
+
+- Follow-up: removed the web completion footer and intermediate Another puzzle /
+  Done dialog. Completion opens New Puzzle directly; dismissing it preserves the
+  finished board. Current iOS source also has the rejected completion UI; need
+  the owner's earlier iOS reference before claiming exact parity.
+- Empty status rows no longer reserve phone height. Full-width checks include
+  browser-chrome-sized viewports 390×664 and 430×740. Extremely short viewports
+  still shrink the square board to keep controls reachable without scrolling.
+- Follow-up Astro check/build and completion/layout tests passed in Chromium and
+  iPhone WebKit (four tests). Owner controls the dev server; the agent stopped its
+  server on request. Next: physical-phone review and earlier iOS UI reference.
+
+- Extended the existing compact phone layout through 750px viewport height,
+  reclaiming space before shrinking the board. Verified the live LAN page at
+  375×667: board starts at x=0 and measures 375×375.
+- Astro check/build passed; existing ten-viewport no-scroll/square-board checks
+  passed in Chromium and iPhone WebKit.
+- Dev server started at `http://10.0.0.202:4321/play/`; QR output and HTTP 200
+  verified. This address depends on the Mac's current network.
+- Next: owner checks layout/live reload on physical phones. Fullscreen UI awaits
+  a decision about adding a menu control. Fullscreen API requires browser support
+  and a user gesture, not PWA installation; iPhone Home Screen standalone launch
+  is the reliable browser-chrome-free route. Tablet/desktop sizing retains the
+  shared specification's square-board caps and landscape arrangement.
+
 ## Coverage
 
 - All 8,000 collection puzzles have exactly one solution, with 2,000 per difficulty.

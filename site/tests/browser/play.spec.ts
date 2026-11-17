@@ -104,8 +104,11 @@ test('completion, restart, and Classic checking', async ({ page }) => {
   const g = fixture(); g.board.values = [...g.puzzle.solution]; g.board.values[2] = 0;
   await load(page, g); await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
-  await expect(page.locator('#notice-title')).toHaveText('Puzzle complete');
-  await page.getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.locator('#new-dialog')).toBeVisible();
+  await expect(page.locator('#notice-dialog')).not.toBeVisible();
+  await page.locator('#new-dialog [data-close]').click();
+  await expect(page.locator('#status')).toBeEmpty();
+  expect((await saved(page)).finished).toBe(true);
   await menu(page, 'restart'); await page.getByRole('button', { name: 'Restart', exact: true }).click();
   expect((await saved(page)).board.values).toEqual(example);
 });
@@ -140,13 +143,16 @@ test('offline reload includes the collection and generator worker', async ({ pag
 });
 test('phone, tablet, desktop, and small-window layouts fit without scrolling', async ({ page }) => {
   await load(page);
-  for (const [width, height] of [[320, 568], [375, 667], [390, 844], [430, 932], [844, 390], [1024, 768], [768, 1024], [1440, 900], [600, 500], [280, 480]]) {
+  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [844, 390], [1024, 768], [768, 1024], [1440, 900], [600, 500], [280, 480]]) {
     await page.setViewportSize({ width, height });
     const boxes = await page.locator('#board, .keypad, .tools').evaluateAll(elements => elements.map(e => {
       const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
     }));
     for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(width + 1); expect(box.bottom).toBeLessThanOrEqual(height + 1); }
     expect(Math.abs(boxes[0].width - boxes[0].height)).toBeLessThan(1);
+    if (width < 700 && height >= width + 266) {
+      expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(width);
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1 || document.documentElement.scrollWidth > innerWidth + 1);
     expect(overflow, `${width}×${height}`).toBe(false);
   }

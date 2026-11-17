@@ -164,7 +164,11 @@ gameplay/history actions; replay is through confirmed Restart or New Puzzle.
 - Challenge strike indicators use Xs for small limits, a count for 10/unlimited.
 - Accepted digits travel from keypad to cell. Rejections turn red and recoil;
   Reduce Motion / disabled animations use immediate feedback, not travel/shaking.
-- Completion: Puzzle complete, another puzzle, or Done.
+- Web completion opens New Puzzle directly, without an intermediate completion
+  dialog or a persistent completion footer. Dismissing the chooser keeps the
+  completed board. No added completion/status copy. Native implementations still
+  contain the older completion sheet/footer; alignment with the owner's earlier
+  iOS UI is pending confirmation of that reference.
 - Cells expose row, column, value/clue or notes, selection, and explicit errors to
   assistive technology. Browser dialogs manage focus; controls work with keyboard.
   Web shortcuts: arrows, 1–9, N, Backspace/Delete, Cmd/Ctrl+Z, Shift for redo.

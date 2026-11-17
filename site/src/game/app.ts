@@ -87,10 +87,10 @@ function render() {
   $<HTMLButtonElement>('[data-action="redo"]').disabled = !canRedo(g);
   const status = $('#status'); status.classList.toggle('error', errorCell >= 0);
   status.textContent = errorCell >= 0 ? 'Incorrect number' : '';
-  if (errorCell < 0 && (g.finished || isOut(g))) {
+  if (errorCell < 0 && isOut(g)) {
     const button = document.createElement('button');
-    button.className = 'status-button'; button.textContent = g.finished ? 'Puzzle complete' : 'Continue in Classic';
-    button.onclick = g.finished ? outcome : () => { g.mode = 'classic'; render(); save(); };
+    button.className = 'status-button'; button.textContent = 'Continue in Classic';
+    button.onclick = () => { g.mode = 'classic'; render(); save(); };
     status.replaceChildren(button);
   }
   $('#save-status').textContent = saveError || prefError || restoreError;
@@ -121,9 +121,7 @@ function outcome() {
     { label: 'Continue in Classic', run: () => { if (game) game.mode = 'classic'; checked.clear(); render(); save(); } },
     { label: 'New Puzzle', run: openNew },
   ]);
-  else if (game.finished) notice('Puzzle complete', `${title(game.puzzle.difficulty)} · ${title(game.mode)}${preferences.showTimer ? ` · ${time(game.elapsed)}` : ''}`, [
-    { label: 'Another puzzle', run: openNew }, { label: 'Done' },
-  ]);
+  else if (game.finished) openNew();
 }
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
 function animateEntry(digit: number, index: number, result: Result) {

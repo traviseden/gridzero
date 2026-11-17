@@ -24,5 +24,12 @@ fieldset { border:0; padding:0; margin:0 0 24px; min-width:0; } legend { padding
 .entry-flight { position:fixed; z-index:5; pointer-events:none; color:var(--accent); font-size:30px; font-weight:500; transform:translate(-50%,-50%); } .cell.rejected { animation:shake .28s ease-in-out; } @keyframes shake { 25% { translate:-3px 0; } 75% { translate:3px 0; } } .no-script { position:fixed; inset:0; background:var(--paper); padding:48px; z-index:10; }
 @media (min-width:800px) and (min-height:850px) { .game-app { gap:18px; padding-top:24px; --board-size:min(calc(100vw - 40px),calc(100dvh - 414px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),720px); } .key-row button { height:64px; } }
 @media (min-width:700px) and (orientation:landscape) { .game-app { --board-size:min(calc(100dvh - 145px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),calc(100vw - 340px),720px); max-width:1120px; min-height:100dvh; display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,340px); grid-template-rows:44px 36px 1fr 20px; align-content:center; justify-items:center; padding-left:max(16px,env(safe-area-inset-left)); padding-right:max(16px,env(safe-area-inset-right)); column-gap:24px; row-gap:8px; } .game-header { grid-column:1/-1; } .metadata { grid-column:1; } .board { grid-column:1; grid-row:3; align-self:center; } .tools { grid-column:2; grid-row:3; align-self:center; gap:16px; transform:translateY(-100px); } .keypad { grid-column:2; grid-row:3; transform:translateY(35px); } .game-status { grid-column:1/-1; } }
-@media (max-height:650px) and (max-width:699px) { .game-app { gap:6px; --board-size:min(100vw,calc(100dvh - 292px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),720px); } .key-row button { height:44px; font-size:26px; } .tools { height:44px; } }
+@media (max-height:750px) and (max-width:699px) { .game-app { gap:6px; --board-size:min(100vw,calc(100dvh - 292px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),720px); } .key-row button { height:44px; font-size:26px; } .tools { height:44px; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+.game-status:has(#status:empty):has(#save-status:empty) { display:none; }
+@media (max-width:699px) {
+  .game-app:has(#status:empty):has(#save-status:empty) { --board-size:min(100vw,calc(100dvh - 324px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+}
+@media (max-width:699px) and (max-height:750px) {
+  .game-app:has(#status:empty):has(#save-status:empty) { --board-size:min(100vw,calc(100dvh - 266px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+}
