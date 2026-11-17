@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { createGame, enter, erase, fillNotes, undo, redo, isOut, validSave } from '../src/game/game';
+import { createGame, enter, erase, fillNotes, undo, redo, isOut, leastFilledDigit, validSave } from '../src/game/game';
 import { all, candidates, complete, consistent, generate, grade, peers, solutions, type Puzzle } from '../src/game/sudoku';
 import { darkAppearance, defaults, restorePreferences } from '../src/game/preferences';
 
@@ -51,8 +51,29 @@ test('Fill Notes uses current board hypotheses, not solution, and is undoable', 
 test('Classic freely accepts hypotheses but only valid completion finishes', () => {
   const g = createGame(puzzle(), 'classic'); enter(g, 1, 2);
   assert.equal(g.strikes, 0); assert.equal(g.finished, false);
+  erase(g, 2);
   g.puzzle.solution.forEach((d, i) => { if (!g.puzzle.givens[i]) enter(g, d, i); });
   assert.equal(g.finished, true); assert.equal(enter(g, 2, 2), 'ignored');
+});
+test('filled cells ignore number entry without strikes or history changes', () => {
+  for (const mode of ['classic', 'challenge'] as const) {
+    const g = createGame(puzzle(), mode);
+    enter(g, 4, 2);
+    const before = structuredClone(g);
+    assert.equal(enter(g, 1, 2), 'ignored');
+    assert.equal(enter(g, 4, 2), 'ignored');
+    assert.equal(enter(g, 1, 2, true), 'ignored');
+    assert.deepEqual(g, before);
+    erase(g, 2);
+    assert.equal(enter(g, 4, 2), 'changed');
+  }
+});
+test('starting digit uses the smallest count and randomizes only tied digits', () => {
+  const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7];
+  assert.equal(leastFilledDigit(values, () => 0), 8);
+  assert.equal(leastFilledDigit(values, () => .99), 9);
+  assert.equal(leastFilledDigit([...values, 8], () => .99), 9);
+  assert.equal(leastFilledDigit([1, 2, 3, 4, 5, 6, 7, 8], () => 0), 9);
 });
 test('save validation rejects malformed board, notes, history, rules, and solution', () => {
   const g = createGame(puzzle()); assert.equal(validSave(g), true);

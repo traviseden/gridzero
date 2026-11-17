@@ -6,6 +6,7 @@ export default defineConfig({
   site: 'https://gridzero.win',
   output: 'static',
   devToolbar: { enabled: false },
+  vite: { define: { __GRIDZERO_BUILD__: JSON.stringify(`gridzero-play-${Date.now()}`) } },
   trailingSlash: 'always',
   build: { inlineStylesheets: 'never' },
   integrations: [{

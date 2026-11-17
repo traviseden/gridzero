@@ -21,6 +21,13 @@ belong on About/Help.
 - Remember only successfully started choices. Generation failure/cancellation
   preserves the previous saved game and choices.
 - `/play/` restores a valid saved game unchanged. Without one it opens the lobby.
+- On game start, choose the digit with the fewest filled cells, randomly among
+  ties, and enter number focus rather than selecting an input cell. Restoring or
+  restarting a board also initializes number focus from its current counts.
+- Tapping a filled cell focuses its digit: all matching cells receive the same
+  border/background, without a uniquely selected cell or peer shading. Tapping
+  an empty cell switches to cell focus. Accepted entries switch to number focus.
+  Respect the existing matching-highlight preference.
 - Completion offers **New game** (lobby) and **Admire puzzle** (dismiss and retain
   completed board). No completion heading, summary, or persistent footer.
 - The game menu's New game returns to the lobby. Browser back/forward switches
@@ -32,6 +39,9 @@ belong on About/Help.
 
 - Conventional 9×9 Sudoku; rows, columns, and boxes contain 1–9 once.
 - Starting clues are immutable. Every puzzle must have exactly one solution.
+- Number entry on any filled cell is a no-op in either mode: no replacement,
+  strike, or history change. Erase an editable filled cell before changing it.
+  Erase targets the editable cell explicitly tapped/entered, not every match.
 - Challenge rejects wrong entries and adds strikes; default limit 3, configurable
   1–5 for future games. Saved games retain their original limits, including legacy
   unlimited/10. Undo never removes strikes; notes are not solution-checked.
@@ -69,6 +79,8 @@ belong on About/Help.
   highlights on; notes, Fill Notes, and cleanup off by default.
 - Lobby styling uses a narrow centered column, stacked labels, full-width 56px
   controls, consistent spacing, and the existing theme palette. No added content.
+- Game menu/settings use the same restrained surface controls, spacing, and
+  typography, without decorative menu glyphs, blurred backdrops, or added copy.
 - Cells expose row, column, value/clue, notes, selection, and explicit errors.
   Dialogs manage focus. Keyboard: arrows, 1–9, N, Backspace/Delete,
   Cmd/Ctrl+Z, Shift for redo.
@@ -103,8 +115,19 @@ browser/PWA storage separation, and uninstall can lose saves or cached assets.
 Manifest keeps stable ID `/play/`, launches `/`, and scopes to `/`, standalone.
 Ship SVG, 192/512 PNG, and Apple touch icons. Explain installation only on About/Help.
 Production service worker caches lobby, game, informational pages, styles, engine,
-collection, and generation worker on HTTPS/localhost. Failed updates leave the old
-worker intact; waiting updates activate when old clients close. Never clear saves.
+collection, and generation worker on HTTPS/localhost. Explicitly check for updates
+at startup and when returning to the foreground. Install the entire new cache
+before activation; failed installs remove only their partial cache.
+
+On an untouched startup with no other open app windows, activate a fully installed
+update and reload once, saving the current game first. Once the user interacts,
+defer automatic reload until a later startup. Other open windows block forced
+activation; the normal worker lifecycle remains the fallback. Returning to the
+foreground checks/downloads updates but does not reset an already-interactive session.
+
+Keep older hashed assets usable until a page from the current build is the sole
+window. Then remove older caches, never newer pending caches or localStorage.
+No update dialog, toolbar, reinstall requirement, or site-data clearing.
 
 ## Verification and credits
 

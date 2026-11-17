@@ -14,9 +14,15 @@ export const locked = (g: Game) => g.finished || isOut(g);
 export const canUndo = (g: Game) => !locked(g) && g.undoStack.length > 0;
 export const canRedo = (g: Game) => !locked(g) && g.redoStack.length > 0;
 const copy = (b: Board): Board => ({ values: [...b.values], notes: [...b.notes] });
+export function leastFilledDigit(values: number[], random = Math.random): number {
+  const counts = Array.from({ length: 9 }, (_, i) => values.filter(value => value === i + 1).length);
+  const minimum = Math.min(...counts);
+  const tied = counts.flatMap((count, i) => count === minimum ? [i + 1] : []);
+  return tied[Math.floor(random() * tied.length)];
+}
 function remember(g: Game) { g.undoStack.push(copy(g.board)); g.undoStack = g.undoStack.slice(-300); g.redoStack = []; }
 export function enter(g: Game, digit: number, i: number, pencil = false, cleanup = false): Result {
-  if (!Number.isInteger(i) || i < 0 || i >= 81 || !Number.isInteger(digit) || digit < 1 || digit > 9 || g.puzzle.givens[i] || locked(g)) return 'ignored';
+  if (!Number.isInteger(i) || i < 0 || i >= 81 || !Number.isInteger(digit) || digit < 1 || digit > 9 || g.puzzle.givens[i] || g.board.values[i] || locked(g)) return 'ignored';
   if (pencil) {
     if (g.board.values[i]) return 'ignored';
     remember(g); g.board.notes[i] ^= 1 << digit; return 'changed';

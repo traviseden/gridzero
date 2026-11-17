@@ -10,6 +10,7 @@ const lobby = Astro.url.pathname === '/';
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#faf9f5" />
+    <meta name="gridzero-build" content={__GRIDZERO_BUILD__} />
     <meta name="description" content="Play GridZero Sudoku. Challenge or Classic, pencil notes, 8,000 puzzles, and zero distractions. Free, private, and offline-ready." />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
     <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
@@ -45,12 +46,12 @@ const lobby = Astro.url.pathname === '/';
     <dialog id="menu-dialog" aria-labelledby="menu-title">
       <header class="dialog-header"><h2 id="menu-title">Game menu</h2><button data-close aria-label="Close game menu">Done</button></header>
       <div class="menu-actions">
-        <button data-action="new">New game <span>＋</span></button>
-        <button data-action="settings">Settings <span>☷</span></button>
-        <button data-action="check" hidden>Check Board <span>✓</span></button>
-        <button data-action="fill" hidden>Fill Notes <span>✎</span></button>
-        <button data-action="redo">Redo <span>↷</span></button>
-        <button data-action="restart">Restart Puzzle <span>↻</span></button>
+        <button data-action="new">New game</button>
+        <button data-action="settings">Settings</button>
+        <button data-action="check" hidden>Check Board</button>
+        <button data-action="fill" hidden>Fill Notes</button>
+        <button data-action="redo">Redo</button>
+        <button data-action="restart">Restart Puzzle</button>
       </div>
       <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/">Home</a></nav>
     </dialog>

@@ -90,6 +90,50 @@ https://0ebc2a10.gridzero.pages.dev / https://gridzero.win/.
 Live assets match the build; production WebKit gameplay/persistence smoke passed.
 See `GO-LIVE.md` for deployment details and remaining physical-device checks.
 
+## Startup updater follow-up (deployed)
+
+- Added explicit uncached worker checks on startup and foreground return.
+- An untouched startup can activate a fully cached update and reload once after
+  saving. Interaction blocks reload; another open window blocks forced activation.
+- Old bundles remain cached for old pages. Cleanup requires a sole current-build
+  page and deletes only older caches, never an installing/waiting newer cache.
+- Partial failed installations are removed; current caches and localStorage stay.
+- Initial migration from the previously deployed updater uses its normal worker
+  lifecycle: visit online, close all GridZero windows/tabs, then reopen. Reinstalling
+  or clearing site data should not be necessary for application code updates.
+- A suspended already-interactive PWA checks on foreground return but defers reload
+  to a fresh startup. This avoids interrupting gameplay or pending lobby choices.
+- New Chromium tests serve two real worker releases on isolated local servers:
+  successful activation/save preservation/offline use, failed installation, and
+  multiple-window deferral. Physical iPhone update testing remains required.
+- Astro check/build passed; full browser suite: 36 passed, four service-worker
+  tests skipped on WebKit. Included a regression check that old-client cleanup
+  cannot delete a newer waiting cache.
+- Deployed at the owner's request without committing:
+  https://dba4a769.gridzero.pages.dev / https://gridzero.win/.
+  Verified live lobby/game HTML, worker, and referenced CSS/JS against the local
+  build after initial edge propagation. Source changes intentionally remain uncommitted.
+
+## Number focus and in-game options
+
+- New/restored/restarted games choose the least-filled digit, randomly among ties.
+  Initial focus is a number, not a cell. Filled-cell taps highlight every match
+  with the same border/background; empty-cell taps select an input cell.
+- Accepted entries switch to number focus. Entry on filled cells is ignored by
+  both UI and core engine, including Classic: no strike, overwrite, or history.
+  Explicit Erase still acts on the editable cell tapped/entered.
+- Simplified game-menu action rows and restyled Settings with the lobby's
+  spacing, full-width selectors, and restrained surfaces. Dialog titles receive
+  initial focus without a decorative focus outline; controls retain keyboard outlines.
+- Verified 13 core tests, 40 browser tests (four WebKit service-worker skips),
+  Astro check/build, link checks, plus 14 targeted dialog/focus checks after polish.
+- Production WebKit verified least-filled focus, filled-cell no-op, menu/settings,
+  and no JavaScript errors. Reviewed phone screenshots.
+- Latest deployment: https://df1c1a1b.gridzero.pages.dev / https://gridzero.win/.
+  Owner subsequently approved committing and pushing the deployed updater,
+  number-focus behavior, and menu/settings refinement.
+- Next: owner reviews number focus and menu/settings on physical phones.
+
 ## Local network development
 
 `npm --prefix site run dev` listens on the LAN and prints a lobby QR code for

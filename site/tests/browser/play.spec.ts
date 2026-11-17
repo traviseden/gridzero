@@ -50,6 +50,7 @@ test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks
   expect((await saved(page)).strikes).toBe(3); expect((await saved(page)).board.values[2]).toBe(0);
   await page.reload(); await expect(page.locator('#notice-dialog')).toBeVisible();
   await page.locator('#notice-dialog').getByRole('button', { name: 'Continue in Classic', exact: true }).click();
+  await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
   await expect(page.locator('[data-cell="2"] .value')).toHaveText('1');
   await menu(page, 'check'); await expect(page.locator('#notice-title')).toHaveText('A second look');
@@ -162,11 +163,21 @@ test('entry transitions serialize rapid input and show strikes at arrival', asyn
   await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
   await expect(page.locator('#notes')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('[data-cell="2"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('[data-cell="3"]').click();
+  await page.evaluate(() => {
+    const main = document.querySelector<HTMLElement>('#main')!;
+    const observer = new MutationObserver(() => {
+      if (main.dataset.entryPhase !== 'recoiling') return;
+      observer.disconnect();
+      main.dataset.recoilStrikes = String(document.querySelectorAll('.strike.used').length);
+      document.querySelector<HTMLButtonElement>('[data-digit="1"]')!.click();
+    });
+    observer.observe(main, { attributes: true, attributeFilter: ['data-entry-phase'] });
+  });
   await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
   await expect(page.locator('.strike.used')).toHaveCount(0);
-  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'recoiling');
+  await expect(page.locator('#main')).toHaveAttribute('data-recoil-strikes', '1');
   await expect(page.locator('.strike.used')).toHaveCount(1);
-  await page.evaluate(() => document.querySelector<HTMLButtonElement>('[data-digit="1"]')!.click());
   await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
   expect((await saved(page)).strikes).toBe(1);
   await expect(page.locator('.entry-flight, .cell.flying')).toHaveCount(0);
@@ -194,8 +205,51 @@ test('invalid saves recover and storage failures are visible', async ({ page }) 
   await page.goto('/play/'); await expect(page.locator('#lobby-error')).toContainText('previous save');
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('storage disabled'); }; });
   await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.locator('.cell:not(.has-value)').first().click();
   await page.locator('#notes').click(); await page.getByRole('button', { name: 'Toggle note 1', exact: true }).click();
   await expect(page.locator('#save-status')).toContainText("Couldn't save your progress");
+});
+test('new game focuses the least-filled digit without selecting an input cell', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  const g = await saved(page);
+  const counts = Array.from({ length: 9 }, (_, i) => g.board.values.filter(v => v === i + 1).length);
+  const digit = Number(await page.locator('#board').getAttribute('data-digit'));
+  expect(counts[digit - 1]).toBe(Math.min(...counts));
+  await expect(page.locator('#board')).toHaveAttribute('data-focus', 'number');
+  await expect(page.locator('.cell.selected, .cell.related')).toHaveCount(0);
+  await expect(page.locator('.cell.matching')).toHaveCount(counts[digit - 1]);
+  await page.keyboard.press('1');
+  expect((await saved(page)).board).toEqual(g.board);
+  expect((await saved(page)).strikes).toBe(0);
+});
+test('filled-cell taps focus all matching digits equally and number entry is a no-op', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await load(page);
+  await page.locator('[data-cell="0"]').click();
+  await expect(page.locator('#board')).toHaveAttribute('data-digit', '5');
+  await expect(page.locator('.cell.selected, .cell.related')).toHaveCount(0);
+  const borders = await page.locator('.cell.matching').evaluateAll(elements => elements.map(element => {
+    const style = getComputedStyle(element);
+    return [style.boxShadow, style.backgroundColor];
+  }));
+  expect(borders.length).toBeGreaterThan(1);
+  expect(new Set(borders.map(style => JSON.stringify(style))).size).toBe(1);
+  expect(borders[0][0]).not.toBe('none');
+  await page.keyboard.press('1');
+  expect((await saved(page)).strikes).toBe(0);
+  await page.locator('[data-cell="2"]').click();
+  await expect(page.locator('#board')).toHaveAttribute('data-focus', 'cell');
+  await expect(page.locator('.cell.selected')).toHaveCount(1);
+  await expect(page.locator('.cell.matching')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await expect(page.locator('#board')).toHaveAttribute('data-digit', '4');
+  await page.keyboard.press('1');
+  expect((await saved(page)).strikes).toBe(0);
+  expect((await saved(page)).undoStack).toHaveLength(1);
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await page.locator('#erase').click();
+  await expect(page.locator('[data-cell="2"] .value')).toBeEmpty();
+  await expect(page.locator('[data-cell="2"]')).toHaveClass(/selected/);
 });
 test('offline reload includes the collection and generator worker', async ({ page, context, browserName }) => {
   test.skip(browserName === 'webkit', 'Playwright WebKit does not expose service worker control.');

@@ -1,7 +1,8 @@
-import { canRedo, canUndo, createGame, enter, erase, fillNotes, isOut, locked, redo, undo, validSave, type Game, type Result } from './game';
+import { canRedo, canUndo, createGame, enter, erase, fillNotes, isOut, leastFilledDigit, locked, redo, undo, validSave, type Game, type Result } from './game';
 import { choosePuzzle } from './puzzles';
 import { darkAppearance, defaults, restorePreferences, type Preferences } from './preferences';
 import { digits, peers, type Difficulty, type Mode, type Puzzle, type Source } from './sudoku';
+import { watchForUpdates } from './updates';
 
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const cells = [...document.querySelectorAll<HTMLButtonElement>('[data-cell]')];
@@ -12,7 +13,7 @@ const newForm = $<HTMLFormElement>('#new-form'), settingsForm = $<HTMLFormElemen
 const formField = (form: HTMLFormElement, name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
 const SAVE = 'gridzero.web.game.v1', PREFS = 'gridzero.web.preferences.v1';
 const systemScheme = matchMedia('(prefers-color-scheme: dark)'), reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
-let preferences = { ...defaults }, game: Game | undefined, played: string[] = [], selected = 0, pencil = false;
+let preferences = { ...defaults }, game: Game | undefined, played: string[] = [], selected = -1, cursor = 0, focusedDigit = 0, pencil = false;
 let checked = new Set<number>(), errorCell = -1, feedbackToken = 0, worker: Worker | undefined;
 let lastTick: number | undefined, saveError = '', prefError = '', restoreError = '', generating = false;
 type EntryTransition = { phase: 'idle' } | {
@@ -40,7 +41,17 @@ function appearance() {
 }
 const title = (s: string) => s[0].toUpperCase() + s.slice(1);
 const time = (elapsed: number) => `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, '0')}`;
-const canEnter = () => !!game && !game.puzzle.givens[selected] && !locked(game);
+const canEdit = () => !!game && selected >= 0 && !game.puzzle.givens[selected] && !locked(game);
+const canEnter = () => canEdit() && !game!.board.values[selected];
+function startingFocus() {
+  selected = -1;
+  focusedDigit = leastFilledDigit(game!.board.values);
+  cursor = Math.max(0, game!.board.values.indexOf(focusedDigit));
+}
+function selectCell(index: number) {
+  selected = cursor = index;
+  focusedDigit = game!.board.values[index];
+}
 function render() {
   appearance();
   if (!game) {
@@ -49,20 +60,24 @@ function render() {
     $('#save-status').textContent = saveError || prefError || restoreError;
     return;
   }
-  const g = game, value = g.board.values[selected];
+  const g = game;
+  const cellFocus = selected >= 0 && !focusedDigit;
+  $('#board').dataset.focus = focusedDigit ? 'number' : 'cell';
+  $('#board').dataset.digit = String(focusedDigit);
   cells.forEach((cell, i) => {
     const v = g.board.values[i], notes = digits(g.board.notes[i]);
     cell.querySelector('.value')!.textContent = v ? String(v) : '';
     cell.querySelectorAll<HTMLElement>('[data-note]').forEach(n => { const d = Number(n.dataset.note); n.textContent = notes.includes(d) ? String(d) : ''; });
     cell.classList.toggle('given', !!g.puzzle.givens[i]);
     cell.classList.toggle('has-value', !!v);
-    cell.classList.toggle('selected', i === selected);
-    cell.classList.toggle('related', preferences.highlightPeers && peers[selected].includes(i));
-    cell.classList.toggle('matching', preferences.highlightMatching && !!value && v === value);
+    const matching = preferences.highlightMatching && focusedDigit > 0 && v === focusedDigit;
+    cell.classList.toggle('selected', cellFocus && i === selected);
+    cell.classList.toggle('related', cellFocus && preferences.highlightPeers && peers[selected].includes(i));
+    cell.classList.toggle('matching', matching);
     cell.classList.toggle('checked', checked.has(i));
     cell.classList.toggle('rejected', i === errorCell);
-    cell.tabIndex = i === selected ? 0 : -1;
-    cell.setAttribute('aria-pressed', String(i === selected));
+    cell.tabIndex = i === cursor ? 0 : -1;
+    cell.setAttribute('aria-pressed', String(matching || (cellFocus && i === selected)));
     cell.setAttribute('aria-label', `Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}, ${v ? `${v}${g.puzzle.givens[i] ? ', starting clue' : ''}` : `empty${notes.length ? `, notes ${notes.join(', ')}` : ''}`}${checked.has(i) ? ', needs another look' : ''}`);
   });
   $('#difficulty').textContent = g.puzzle.difficulty === 'custom' ? `Custom · ${g.puzzle.givens.filter(v => !v).length} empty` : title(g.puzzle.difficulty);
@@ -76,7 +91,7 @@ function render() {
     for (let i = 0; i < g.strikeLimit; i++) { const mark = document.createElement('span'); mark.textContent = '×'; mark.className = `strike${i < g.strikes ? ' used' : ''}`; mark.setAttribute('aria-hidden', 'true'); strikeDisplay.append(mark); }
   } else strikeDisplay.textContent = `× ${g.strikes}${g.strikeLimit ? ` / ${g.strikeLimit}` : ''}`;
   $<HTMLButtonElement>('#undo').disabled = !canUndo(g);
-  $<HTMLButtonElement>('#erase').disabled = !canEnter();
+  $<HTMLButtonElement>('#erase').disabled = !canEdit();
   $<HTMLButtonElement>('#notes').disabled = locked(g);
   $('#notes').setAttribute('aria-pressed', String(pencil));
   $('.keypad').classList.toggle('pencil', pencil);
@@ -106,6 +121,11 @@ function openDialog(dialog: HTMLDialogElement) {
   clearFlights(); lastTick = undefined; save();
   for (const d of dialogs) if (d.open) d.close();
   dialog.showModal();
+  const heading = dialog.querySelector<HTMLElement>('.dialog-header h2');
+  if (heading?.textContent?.trim()) {
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }
 }
 function notice(heading: string, message: string, actions: { label: string; run?: () => void }[] = [{ label: 'OK' }]) {
   $('#notice-title').textContent = heading; $('#notice-message').textContent = message;
@@ -131,6 +151,7 @@ function outcome() {
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
 function entryFeedback(result: Result, index: number) {
   errorCell = result === 'strike' ? index : -1;
+  if (result !== 'strike' && game) focusedDigit = game.board.values[index];
   haptic(result === 'strike'); render();
 }
 function finishEntry(presentOutcome = true) {
@@ -186,7 +207,7 @@ function animateEntry(digit: number, index: number, result: Result) {
 }
 function canAnimate() { return typeof HTMLElement.prototype.animate === 'function'; }
 function entry(digit: number) {
-  if (!game || transition.phase !== 'idle') return;
+  if (!game || !canEnter() || transition.phase !== 'idle') return;
   errorCell = -1; feedbackToken++; render();
   checked.clear(); const result = enter(game, digit, selected, pencil, preferences.cleanupNotes);
   if (result === 'ignored') return;
@@ -202,10 +223,10 @@ function entry(digit: number) {
     if (result === 'completed' || isOut(game)) outcome();
   }
 }
-function changed(action: () => void) { if (transition.phase !== 'idle') return; action(); checked.clear(); errorCell = -1; feedbackToken++; render(); save(); }
+function changed(action: () => void) { if (transition.phase !== 'idle') return; action(); if (selected >= 0) focusedDigit = game!.board.values[selected]; checked.clear(); errorCell = -1; feedbackToken++; render(); save(); }
 function restart() {
   if (!game) return;
-  changed(() => { game = createGame(game!.puzzle, game!.mode, game!.strikeLimit); selected = Math.max(0, game.board.values.indexOf(0)); pencil = false; lastTick = undefined; });
+  changed(() => { game = createGame(game!.puzzle, game!.mode, game!.strikeLimit); startingFocus(); pencil = false; lastTick = undefined; });
 }
 function openNew() {
   clearFlights(); lastTick = undefined; save();
@@ -219,7 +240,7 @@ function openNew() {
 function showGame() {
   newDialog.hidden = true; $('#main').hidden = false;
   if (location.pathname !== '/play/') history.pushState(null, '', '/play/');
-  cells[selected].focus();
+  cells[cursor].focus({ preventScroll: true });
 }
 function updateNew() {
   const custom = formField(newForm, 'difficulty').value === 'custom';
@@ -250,7 +271,7 @@ function cancelGeneration() {
 }
 $('#cancel-generation').addEventListener('click', cancelGeneration);
 function installPuzzle(puzzle: Puzzle, mode: Mode, source: Source, empty: number) {
-  game = createGame(puzzle, mode, preferences.strikeLimit); selected = Math.max(0, puzzle.givens.indexOf(0));
+  game = createGame(puzzle, mode, preferences.strikeLimit); startingFocus();
   checked.clear(); errorCell = -1; feedbackToken++; pencil = false; clearFlights(); lastTick = undefined;
   played = [...played, puzzle.id].slice(-500); restoreError = '';
   Object.assign(preferences, { difficulty: puzzle.difficulty, mode, source, customEmpty: empty });
@@ -316,7 +337,7 @@ for (const [id, delta] of [['strike-decrease', -1], ['strike-increase', 1]] as c
     updateSettings(); savePreferences();
   });
 }
-cells.forEach((cell, i) => cell.addEventListener('click', () => { if (transition.phase !== 'idle') return; selected = i; render(); }));
+cells.forEach((cell, i) => cell.addEventListener('click', () => { if (transition.phase !== 'idle') return; selectCell(i); render(); }));
 keys.forEach(key => key.addEventListener('click', () => entry(Number(key.dataset.digit))));
 $('#undo').addEventListener('click', () => changed(() => { if (game) undo(game); }));
 $('#erase').addEventListener('click', () => changed(() => { if (game) erase(game, selected); }));
@@ -352,7 +373,7 @@ document.addEventListener('keydown', event => {
   }
   if (event.ctrlKey || event.metaKey) return;
   const movement: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -9, ArrowDown: 9 };
-  if (event.key in movement) { event.preventDefault(); selected = (selected + movement[event.key] + 81) % 81; render(); cells[selected].focus(); }
+  if (event.key in movement) { event.preventDefault(); selectCell((cursor + movement[event.key] + 81) % 81); render(); cells[cursor].focus(); }
   else if (/^[1-9]$/.test(event.key)) { event.preventDefault(); entry(Number(event.key)); }
   else if (event.key === 'Backspace' || event.key === 'Delete') { event.preventDefault(); changed(() => erase(game!, selected)); }
   else if (event.key.toLowerCase() === 'n' && !locked(game)) { event.preventDefault(); pencil = !pencil; render(); }
@@ -378,7 +399,7 @@ try {
   if (raw) {
     const envelope = JSON.parse(raw);
     if (envelope.version !== 1 || !validSave(envelope.game) || !Array.isArray(envelope.played) || !envelope.played.every((id: unknown) => typeof id === 'string')) throw new Error('Invalid save');
-    game = envelope.game; played = envelope.played.slice(-500); selected = Math.max(0, game!.board.values.indexOf(0));
+    game = envelope.game; played = envelope.played.slice(-500); startingFocus();
   }
 } catch { restoreError = "Your previous save couldn't be restored."; }
 render();
@@ -390,8 +411,6 @@ window.addEventListener('popstate', () => {
   else { dialogs.forEach(d => { if (d.open) d.close(); }); showGame(); }
 });
 
-// Cache the production app only. The service worker derives hashed bundles from
-// /play/ so a deploy cannot leave an old page pointing at missing new assets.
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => { /* Online play still works when offline caching is unavailable. */ });
+if (import.meta.env.PROD) {
+  void watchForUpdates(() => { save(); return !saveError; });
 }
