@@ -32,7 +32,7 @@ test('unlimited Challenge still counts strikes without ending the game', () => {
   for (let i = 0; i < 12; i++) enter(g, 1, 2);
   assert.equal(g.strikes, 12); assert.equal(isOut(g), false);
 });
-test('manual notes, cleanup, and whole-board undo/redo match native semantics', () => {
+test('manual notes, cleanup, and whole-board undo/redo preserve board state', () => {
   const g = createGame(puzzle());
   enter(g, 4, 3, true); enter(g, 4, 2, false, true);
   assert.equal(g.board.notes[3], 0); undo(g);
@@ -69,9 +69,9 @@ test('save validation rejects malformed board, notes, history, rules, and soluti
   ]) { const x = structuredClone(g); mutate(x); assert.equal(validSave(x), false); }
   assert.equal(validSave(null), false); assert.equal(validSave({}), false);
 });
-test('all 8,000 shared native collection puzzles have unique solutions and retained ratings', () => {
-  const text = readFileSync(new URL('../../Sources/GridZeroCore/Resources/puzzles.txt', import.meta.url), 'utf8');
-  const metadata = JSON.parse(readFileSync(new URL('../../Sources/GridZeroCore/Resources/collection.json', import.meta.url), 'utf8'));
+test('all 8,000 collection puzzles have unique solutions and retained ratings', () => {
+  const text = readFileSync(new URL('../src/data/puzzles.txt', import.meta.url), 'utf8');
+  const metadata = JSON.parse(readFileSync(new URL('../src/data/collection.json', import.meta.url), 'utf8'));
   assert.equal(metadata.count, 8000); assert.equal(metadata.bytes, Buffer.byteLength(text));
   assert.equal(metadata.sha256, createHash('sha256').update(text).digest('hex'));
   const counts: Record<string, number> = {};
@@ -92,7 +92,7 @@ test('custom generation returns exact empty counts and unique solutions', () => 
     assert.equal(solutions(p.givens).length, 1); assert.equal(complete(p.solution), true);
   }
 });
-test('generated difficulties match the native logical grading definitions', () => {
+test('generated difficulties match the logical grading definitions', () => {
   for (const level of ['easy', 'medium', 'hard', 'expert'] as const) {
     const p = generate(level); assert.equal(grade(p.givens), level); assert.equal(solutions(p.givens).length, 1);
   }

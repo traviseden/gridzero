@@ -3,12 +3,11 @@ import type { APIRoute } from 'astro';
 const version = `gridzero-play-${Date.now()}`;
 export const GET: APIRoute = () => new Response(`
 const CACHE = ${JSON.stringify(version)};
-const CORE = ['/play/', '/assets/mark.svg', '/assets/apple-touch-icon.png', '/assets/icon-192.png', '/assets/icon-512.png', '/manifest.webmanifest'];
+const CORE = ['/', '/play/', '/about/', '/privacy/', '/support/', '/credits/', '/assets/Puzzle-LICENSE.txt', '/assets/mark.svg', '/assets/apple-touch-icon.png', '/assets/icon-192.png', '/assets/icon-512.png', '/manifest.webmanifest'];
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   await cache.addAll(CORE);
-  const page = await cache.match('/play/');
-  const html = await page.text();
+   const html = (await Promise.all(CORE.filter(p => p.endsWith('/')).map(async p => (await cache.match(p)).text()))).join('\\n');
   const assets = [...new Set([...html.matchAll(/(?:src|href)="([^" ]+)"/g)].map(m => m[1]).filter(p => p.startsWith('/_astro/')))];
   await cache.addAll(assets);
   // The generator is emitted as a separate hashed worker referenced by JS.

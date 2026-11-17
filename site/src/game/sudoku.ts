@@ -1,4 +1,4 @@
-// Browser port of Sources/GridZeroCore/Sudoku.swift. Keep rule changes in sync.
+// Sudoku solver, generator, and logical difficulty grading.
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'custom';
 export type Mode = 'challenge' | 'classic';
 export type Source = 'collection' | 'generated';

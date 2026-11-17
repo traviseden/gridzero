@@ -1,17 +1,16 @@
 ---
 import Site from '../layouts/Site.astro';
-import collection from '../../../Sources/GridZeroCore/Resources/collection.json';
+import collection from '../data/collection.json';
 ---
 <Site title="Puzzle credits — GridZero" description="Thanks to Grant McLean and Sudoku Exchange for GridZero's public-domain Sudoku collection, generated with QQWing and rated with Sukaku Explainer.">
   <main id="main" class="document">
-    <p class="eyebrow">Good puzzles. Generous people.</p>
-    <h1>Credit where it's due.</h1>
+    <h1>Credits</h1>
     <p>GridZero's <strong>{collection.count.toLocaleString('en-US')} bundled puzzles</strong> come from <a href="https://github.com/grantm/sudoku-exchange-puzzle-bank">Grant McLean's Sudoku Exchange puzzle bank</a>, created for <a href="https://sudokuexchange.com/">Sudoku Exchange</a>. Thank you for making this collection freely available.</p>
     <p>The upstream puzzles were generated with <a href="https://github.com/stephenostermiller/qqwing">Stephen Ostermiller's QQWing</a> and rated with <a href="https://github.com/SudokuMonster/SukakuExplainer">SudokuMonster's Sukaku Explainer</a>. Those tools are credited for the dataset; GridZero does not embed their engines. Our on-device generator is our own implementation.</p>
-    <h2>Free really means free</h2>
+    <h2>Licenses</h2>
     <p>The dataset is dedicated to the public domain under the <a href="/assets/Puzzle-LICENSE.txt">Unlicense</a>. GridZero's app code and original artwork are <a href="https://github.com/traviseden/gridzero/blob/main/LICENSE">MIT licensed</a>.</p>
-    <h2>The same collection everywhere</h2>
-    <p>iOS, Android, and the browser all use one checked resource: 2,000 Easy, 2,000 Medium, 2,000 Hard, and 2,000 Expert puzzles. Expert maps to upstream Diabolical. Original puzzle IDs and ratings are preserved, and each bundled board is independently checked for exactly one solution.</p>
+    <h2>Collection</h2>
+    <p>2,000 Easy, 2,000 Medium, 2,000 Hard, and 2,000 Expert puzzles. Expert maps to upstream Diabolical. Original puzzle IDs and ratings are preserved, and each bundled board is independently checked for exactly one solution.</p>
     <p>The pinned upstream revision is <a href={`https://github.com/grantm/sudoku-exchange-puzzle-bank/tree/${collection.revision}`}><code>{collection.revision.slice(0, 12)}</code></a>. The larger upstream bank contains 893,916 records at that revision; this release bundles a reproducible selection, not the entire bank.</p>
     <p>Read our <a href="https://github.com/traviseden/gridzero/blob/main/docs/puzzle-data.md">data provenance notes</a> for the selection process and future expansion plan.</p>
   </main>

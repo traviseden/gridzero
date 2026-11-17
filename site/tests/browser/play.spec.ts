@@ -17,10 +17,18 @@ async function load(page: Page, game = fixture(), prefs = {}) {
 async function saved(page: Page): Promise<Game> { return page.evaluate(() => JSON.parse(localStorage.getItem('gridzero.web.game.v1')!).game); }
 async function menu(page: Page, action: string) { await page.getByRole('button', { name: 'Game menu', exact: true }).click(); await page.locator(`[data-action="${action}"]`).click(); }
 
-test('homepage links to the game; informational pages stay script-free', async ({ page }) => {
-  await page.goto('/'); await page.getByRole('link', { name: 'Play now' }).click();
+test('lobby starts the selected game; informational pages stay script-free', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#main')).not.toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('gridzero.web.game.v1'))).toBeNull();
+  await page.locator('#new-form [name="difficulty"]').selectOption('hard');
+  await page.locator('#new-form [name="mode"]').selectOption('classic');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page).toHaveURL(/\/play\/$/);
+  await expect(page.locator('#difficulty')).toHaveText('Hard');
+  await expect(page.locator('#mode')).toHaveText('Classic');
   await expect(page.locator('[data-cell]')).toHaveCount(81);
-  for (const route of ['/', '/privacy/', '/support/', '/credits/']) { await page.goto(route); await expect(page.locator('script')).toHaveCount(0); }
+  for (const route of ['/about/', '/privacy/', '/support/', '/credits/']) { await page.goto(route); await expect(page.locator('script')).toHaveCount(0); }
 });
 test('manual notes, undo, correct entries, and persistence', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
@@ -70,13 +78,14 @@ test('custom generation runs in worker and cancellation keeps old game', async (
   await load(page); await menu(page, 'new');
   await page.locator('#new-form [name="difficulty"]').selectOption('custom');
   await page.locator('#new-form [name="empty"]').fill('20');
-  await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible({ timeout: 20_000 });
   const g = await saved(page); expect(g.puzzle.givens.filter(v => !v)).toHaveLength(20);
   expect(solutions(g.puzzle.givens)).toHaveLength(1);
+  await page.route('**/generator.worker-*.js', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: 'self.onmessage = () => {};' }));
   await menu(page, 'new'); await page.locator('#new-form [name="empty"]').fill('60');
-  await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
-  await page.locator('#new-dialog [data-close]').click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.locator('#cancel-generation').click();
   expect((await saved(page)).puzzle.id).toBe(g.puzzle.id);
 });
 test('mode info preserves pending puzzle choices and returns keyboard focus', async ({ page }) => {
@@ -104,13 +113,24 @@ test('completion, restart, and Classic checking', async ({ page }) => {
   const g = fixture(); g.board.values = [...g.puzzle.solution]; g.board.values[2] = 0;
   await load(page, g); await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
-  await expect(page.locator('#new-dialog')).toBeVisible();
-  await expect(page.locator('#notice-dialog')).not.toBeVisible();
-  await page.locator('#new-dialog [data-close]').click();
+  await expect(page.locator('#notice-dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Admire puzzle', exact: true }).click();
   await expect(page.locator('#status')).toBeEmpty();
   expect((await saved(page)).finished).toBe(true);
   await menu(page, 'restart'); await page.getByRole('button', { name: 'Restart', exact: true }).click();
   expect((await saved(page)).board.values).toEqual(example);
+});
+test('completion New game returns to lobby without replacing the completed save', async ({ page }) => {
+  const g = fixture(); g.board.values = [...g.puzzle.solution]; g.board.values[2] = 0;
+  await load(page, g); await page.locator('[data-cell="2"]').click();
+  await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await page.locator('#notice-dialog').getByRole('button', { name: 'New game', exact: true }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#new-dialog')).toBeVisible();
+  expect((await saved(page)).finished).toBe(true);
+  await page.goBack();
+  await expect(page.locator('#main')).toBeVisible();
+  await expect(page.locator('#status')).toBeEmpty();
 });
 test('keyboard support and reduced motion', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await load(page);
@@ -122,8 +142,9 @@ test('keyboard support and reduced motion', async ({ page }) => {
 });
 test('invalid saves recover and storage failures are visible', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('gridzero.web.game.v1', '{bad'));
-  await page.goto('/play/'); await expect(page.locator('#save-status')).toContainText('previous save');
+  await page.goto('/play/'); await expect(page.locator('#lobby-error')).toContainText('previous save');
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('storage disabled'); }; });
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await page.locator('#notes').click(); await page.getByRole('button', { name: 'Toggle note 1', exact: true }).click();
   await expect(page.locator('#save-status')).toContainText("Couldn't save your progress");
 });
@@ -134,11 +155,14 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await context.setOffline(true); await page.reload();
   await expect(page.locator('[data-cell]')).toHaveCount(81);
-  await menu(page, 'new'); await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
+  await menu(page, 'new');
+  await page.reload();
+  await expect(page.locator('#new-dialog')).toBeVisible();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
   await menu(page, 'new'); await page.locator('#new-form [name="difficulty"]').selectOption('custom');
   await page.locator('#new-form [name="empty"]').fill('20');
-  await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
 });
 test('phone, tablet, desktop, and small-window layouts fit without scrolling', async ({ page }) => {
@@ -158,24 +182,24 @@ test('phone, tablet, desktop, and small-window layouts fit without scrolling', a
   }
 });
 
-test('fresh install starts Medium and last successful choice survives missing game save', async ({ page }) => {
-  await page.goto('/play/'); await expect(page.locator('#difficulty')).toHaveText('Medium');
-  await menu(page, 'new');
+test('lobby defaults Medium and remembers only successfully started choices', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('medium');
   await page.locator('#new-form [name="difficulty"]').selectOption('hard');
-  await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#difficulty')).toHaveText('Hard');
-  await page.evaluate(() => localStorage.removeItem('gridzero.web.game.v1'));
-  await page.reload(); await expect(page.locator('#difficulty')).toHaveText('Hard');
-  await menu(page, 'new');
+  // Clear on the next document before startup; pagehide intentionally saves the
+  // current in-memory game, so clearing immediately before reload is not enough.
+  await page.addInitScript(() => localStorage.removeItem('gridzero.web.game.v1'));
+  await page.reload(); await expect(page.locator('#new-dialog')).toBeVisible();
   await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('hard');
   await page.locator('#new-form [name="difficulty"]').selectOption('easy');
-  await page.locator('#new-dialog [data-close]').click();
-  await page.reload(); await expect(page.locator('#difficulty')).toHaveText('Hard');
+  await page.reload(); await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('hard');
 });
 test('PWA manifest has a stable standalone identity and usable install icons', async ({ page }) => {
   await page.goto('/play/');
   const manifest = await (await page.request.get('/manifest.webmanifest')).json();
-  expect(manifest.id).toBe('/play/'); expect(manifest.start_url).toBe('/play/'); expect(manifest.display).toBe('standalone');
+  expect(manifest.id).toBe('/play/'); expect(manifest.start_url).toBe('/'); expect(manifest.scope).toBe('/'); expect(manifest.display).toBe('standalone');
   for (const size of [192, 512]) {
     const icon = manifest.icons.find((i: { sizes: string }) => i.sizes === `${size}x${size}`);
     expect(icon).toBeTruthy();
@@ -193,10 +217,12 @@ test('startup honors remembered generation and remains usable after cancellation
   // a random puzzle that happened to generate unusually fast.
   await page.route('**/generator.worker-*.js', route => route.fulfill({ status: 200, contentType: 'application/javascript', body: 'self.onmessage = () => {};' }));
   await page.goto('/play/'); await expect(page.locator('#new-dialog')).toBeVisible();
+  await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('custom');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#start-puzzle')).toHaveText('Preparing…');
-  await page.locator('#new-dialog [data-close]').click();
-  await menu(page, 'new'); await page.locator('#new-form [name="difficulty"]').selectOption('medium');
+  await page.locator('#cancel-generation').click();
+  await page.locator('#new-form [name="difficulty"]').selectOption('medium');
   await page.locator('#new-form [name="source"]').selectOption('collection');
-  await page.getByRole('button', { name: 'Start Puzzle', exact: true }).click();
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible(); await expect(page.locator('#difficulty')).toHaveText('Medium');
 });

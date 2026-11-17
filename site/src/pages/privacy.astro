@@ -1,22 +1,14 @@
 ---
 import Site from '../layouts/Site.astro';
 ---
-<Site title="Privacy — GridZero" description="GridZero's privacy policy. Local-only Sudoku, no ads, no tracking, and no accounts.">
+<Site title="Privacy — GridZero" description="Local-only Sudoku, no ads, no tracking, and no accounts.">
   <main id="main" class="document">
-    <p class="eyebrow">Your puzzle. Your business.</p><h1>Privacy, simply.</h1>
-    <p><strong>GridZero does not collect or transmit your personal data.</strong> There are no accounts, ads, analytics SDKs, tracking pixels, or in-app purchases.</p>
-    <h2>On your device</h2>
-    <p>Your puzzle progress, notes, recent puzzle IDs, elapsed time, and settings stay in the app's local storage. GridZero works offline, including puzzle generation. Deleting the app removes its local data; Apple's device backup and restore features may retain or restore app data according to your device settings.</p>
-    <p>The Android app requests no network permission and requires no Google services. Its backup and device-transfer rules exclude local game data and settings.</p>
-    <p>Scheduled light and dark appearance uses your device's clock. It does not use your location.</p>
-    <h2>On this website</h2>
-    <p>The browser game at <a href="/play/">/play</a> uses JavaScript to run Sudoku on your device. Progress, notes, settings, and recent puzzle IDs are stored only in your browser's local storage; they are not sent to us or synced with native apps. Clearing site data removes them. Private browsing or storage restrictions may prevent saving, and the game tells you when a save fails.</p>
-    <p>A service worker caches the game and its puzzle collection so you can play offline after your first successful visit. You can remove that cache by clearing site data. There are no cookies, analytics, embedded third-party media, or tracking fonts. The informational pages need no JavaScript.</p>
-    <p>This site is served by Cloudflare, which processes ordinary request information, such as IP addresses, to deliver and secure the site. See <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a> for its practices.</p>
-    <h2>Links and beta testing</h2>
-    <p>If you follow a link to GitHub or Apple, their services have their own privacy policies. Apple may process TestFlight installation information, feedback, or crash reports through its beta-testing service. GridZero includes no separate reporting or analytics service.</p>
-    <h2>Questions</h2>
-    <p>Visit <a href="/support/">Support</a>. If you choose to post an issue on GitHub, the information you include is handled by GitHub and may be public.</p>
-    <p>Updated October 12, 2026.</p>
+    <h1>Privacy</h1>
+    <p>There are no accounts, ads, analytics, tracking pixels, or purchases.</p>
+    <p>Progress, notes, settings, and recent puzzle IDs are stored in your browser. They are not sent to us. Clearing site data removes them. Private browsing or storage restrictions may prevent saving; the game tells you when a save fails.</p>
+    <p>A service worker caches the app and puzzle collection for offline play after a successful online visit. Clearing site data removes that cache.</p>
+    <p>Scheduled appearance uses your device's clock, not your location.</p>
+    <p>This site is served by Cloudflare, which processes ordinary request information, such as IP addresses, to deliver and secure the site. See <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare's privacy policy</a>.</p>
+    <p>If you post an issue on GitHub, the information you include may be public and is handled by GitHub.</p>
   </main>
 </Site>

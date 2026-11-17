@@ -1,5 +1,5 @@
-// Import the native collection directly: one source of truth, no runtime fetch.
-import collection from '../../../Sources/GridZeroCore/Resources/puzzles.txt?raw';
+// Bundle the collection at build time; gameplay needs no runtime fetch.
+import collection from '../data/puzzles.txt?raw';
 import { solutions, type Difficulty, type Puzzle } from './sudoku';
 export const records = collection.trim().split('\n').filter(line => !line.startsWith('#')).map(line => {
   const [difficulty, id, board, rating] = line.trim().split(/\s+/);

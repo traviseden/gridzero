@@ -41,20 +41,19 @@ SHA-1-derived identifier, published rating bucket, duplicate IDs/boards, and
 exactly one solution with a bounded independent solver. It verifies the entire
 selection before replacing generated files.
 
-The canonical text resource is **840,000 bytes (840 KB decimal)**. All platforms
-use it directly. `Sources/GridZeroCore/Resources/collection.json` records counts,
+The canonical text resource is **840,000 bytes (840 KB decimal)**.
+`site/src/data/collection.json` records counts,
 revision, selection, source, license, byte size, and SHA-256:
 
 `322af3981362ac873c3f8a9f930c47e56482f6d3aaa664309b9ffd64e796863d`
 
 The upstream license is retained in
-`Sources/GridZeroCore/Resources/Puzzle-LICENSE.txt`; the web copy with source
-credit is `site/public/assets/Puzzle-LICENSE.txt`. Swift packages the resource;
-Android references that directory as assets; Astro imports it at build time.
+`site/src/data/Puzzle-LICENSE.txt`; the public copy with source
+credit is `site/public/assets/Puzzle-LICENSE.txt`. Astro imports puzzles at build time.
 Bundle size is a tradeoff we accept for offline access, not a 400-board cap.
 
-Credits are available on the website `/credits/`, linked from the homepage/footer
-and web Settings, and in both native Settings screens. App code/original artwork
+Credits are available on `/credits/`, linked from About, the informational footer,
+and Settings. App code/original artwork
 are MIT; the puzzle bank is public domain. Do not call all dependencies MIT.
 
 ## Other free data considered, not shipped
@@ -74,8 +73,5 @@ validation, difficulty mapping, and manifest—not just a "free download" label.
 
 ## Expansion decision
 
-Current release: 8,000 bundled, offline everywhere. More records can be imported
-without a server. A static, explicit-download pack protocol is specified in
-[SPEC §9](SPEC.md#9-future-static-puzzle-packs--design-only-not-implemented), but
-there is **no download API or native download feature today**. Do not advertise
-that roadmap as shipped functionality.
+Current release: 8,000 bundled, available offline after caching. More records can
+be imported without a gameplay server. There is no puzzle-pack download feature.

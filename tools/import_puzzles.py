@@ -87,7 +87,7 @@ def main():
                 identifiers.add(identifier); boards.add(digits)
                 records.append(f"{difficulty} {identifier} {digits} {rating}\n")
         print(f"Validated {args.per_difficulty} {difficulty} puzzles", flush=True)
-    destination = ROOT / "Sources/GridZeroCore/Resources/puzzles.txt"
+    destination = ROOT / "site/src/data/puzzles.txt"
     data = "".join(records).encode("ascii")
     metadata = {
         "schemaVersion": 1, "collectionVersion": f"sudoku-exchange-{len(records)}-v1",

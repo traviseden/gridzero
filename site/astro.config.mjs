@@ -15,7 +15,7 @@ export default defineConfig({
           .filter(info => info && info.family === 'IPv4' && !info.internal)
           .map(info => info.address));
         for (const host of hosts) {
-          const url = `http://${host}:${address.port}/play/`;
+          const url = `http://${host}:${address.port}/`;
           console.log(`\nScan on the same Wi-Fi: ${url}`);
           qrcode.generate(url, { small: true });
         }

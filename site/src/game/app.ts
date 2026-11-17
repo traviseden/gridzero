@@ -7,7 +7,7 @@ const $ = <T extends HTMLElement = HTMLElement>(selector: string) => document.qu
 const cells = [...document.querySelectorAll<HTMLButtonElement>('[data-cell]')];
 const keys = [...document.querySelectorAll<HTMLButtonElement>('[data-digit]')];
 const dialogs = [...document.querySelectorAll<HTMLDialogElement>('dialog')];
-const newDialog = $<HTMLDialogElement>('#new-dialog'), settingsDialog = $<HTMLDialogElement>('#settings-dialog');
+const newDialog = $('#new-dialog'), settingsDialog = $<HTMLDialogElement>('#settings-dialog');
 const newForm = $<HTMLFormElement>('#new-form'), settingsForm = $<HTMLFormElement>('#settings-form');
 const formField = (form: HTMLFormElement, name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
 const SAVE = 'gridzero.web.game.v1', PREFS = 'gridzero.web.preferences.v1';
@@ -121,7 +121,9 @@ function outcome() {
     { label: 'Continue in Classic', run: () => { if (game) game.mode = 'classic'; checked.clear(); render(); save(); } },
     { label: 'New Puzzle', run: openNew },
   ]);
-  else if (game.finished) openNew();
+  else if (game.finished) notice('', '', [
+    { label: 'New game', run: openNew }, { label: 'Admire puzzle' },
+  ]);
 }
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
 function animateEntry(digit: number, index: number, result: Result) {
@@ -162,8 +164,18 @@ function restart() {
   changed(() => { game = createGame(game!.puzzle, game!.mode, game!.strikeLimit); selected = Math.max(0, game.board.values.indexOf(0)); pencil = false; lastTick = undefined; });
 }
 function openNew() {
+  clearFlights(); lastTick = undefined; save();
+  dialogs.forEach(dialog => { if (dialog.open) dialog.close(); });
   for (const [name, value] of Object.entries({ difficulty: preferences.difficulty, mode: preferences.mode, source: preferences.source, empty: preferences.customEmpty })) formField(newForm, name).value = String(value);
-  $('#generation-error').textContent = ''; updateNew(); openDialog(newDialog);
+  $('#generation-error').textContent = ''; updateNew();
+  $('#main').hidden = true; newDialog.hidden = false;
+  $('#lobby-error').textContent = saveError || prefError || restoreError;
+  if (location.pathname !== '/') history.pushState(null, '', '/');
+}
+function showGame() {
+  newDialog.hidden = true; $('#main').hidden = false;
+  if (location.pathname !== '/play/') history.pushState(null, '', '/play/');
+  cells[selected].focus();
 }
 function updateNew() {
   const custom = formField(newForm, 'difficulty').value === 'custom';
@@ -180,18 +192,19 @@ $('#mode-info').addEventListener('click', () => {
   $<HTMLDialogElement>('#mode-info-dialog').showModal();
 });
 $<HTMLDialogElement>('#mode-info-dialog').addEventListener('close', () => {
-  if (newDialog.open) $('#mode-info').focus();
+  if (!newDialog.hidden) $('#mode-info').focus();
 });
 function setGenerating(value: boolean) {
   generating = value;
   for (const field of newForm.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button')) field.disabled = value;
-  $('#start-puzzle').textContent = value ? 'Preparing…' : 'Start Puzzle';
-  newDialog.querySelector('[data-close]')!.textContent = value ? 'Cancel' : 'Done'; updateNew();
+  $('#start-puzzle').textContent = value ? 'Preparing…' : 'Play';
+  $('#cancel-generation').hidden = !value;
+  $<HTMLButtonElement>('#cancel-generation').disabled = false; updateNew();
 }
 function cancelGeneration() {
   worker?.terminate(); worker = undefined; setGenerating(false);
-  if (!game) $('#status').textContent = 'Choose a puzzle from the game menu.';
 }
+$('#cancel-generation').addEventListener('click', cancelGeneration);
 function installPuzzle(puzzle: Puzzle, mode: Mode, source: Source, empty: number) {
   game = createGame(puzzle, mode, preferences.strikeLimit); selected = Math.max(0, puzzle.givens.indexOf(0));
   checked.clear(); errorCell = -1; feedbackToken++; pencil = false; clearFlights(); lastTick = undefined;
@@ -205,7 +218,7 @@ newForm.addEventListener('submit', event => {
   const source = difficulty === 'custom' ? 'generated' : formField(newForm, 'source').value as Source;
   const empty = Number(formField(newForm, 'empty').value); $('#generation-error').textContent = '';
   if (source === 'collection') {
-    try { installPuzzle(choosePuzzle(difficulty, played), mode, source, empty); newDialog.close(); }
+    try { installPuzzle(choosePuzzle(difficulty, played), mode, source, empty); showGame(); }
     catch (error) { $('#generation-error').textContent = (error as Error).message; }
     return;
   }
@@ -214,7 +227,7 @@ newForm.addEventListener('submit', event => {
     pending.onmessage = (event: MessageEvent<{ puzzle?: Puzzle; error?: string }>) => {
       if (worker !== pending) return;
       cancelGeneration();
-      if (event.data.puzzle) { installPuzzle(event.data.puzzle, mode, source, empty); newDialog.close(); }
+      if (event.data.puzzle) { installPuzzle(event.data.puzzle, mode, source, empty); showGame(); }
       else $('#generation-error').textContent = event.data.error || 'Could not generate a puzzle.';
     };
     pending.onerror = () => { if (worker !== pending) return; cancelGeneration(); $('#generation-error').textContent = 'Generation could not start. Try again or use the collection.'; };
@@ -282,10 +295,10 @@ document.querySelectorAll<HTMLElement>('[data-action]').forEach(button => button
 }));
 dialogs.forEach(dialog => {
   dialog.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => dialog.close()));
-  dialog.addEventListener('close', () => { lastTick = undefined; if (dialog === newDialog) cancelGeneration(); save(); });
+  dialog.addEventListener('close', () => { lastTick = undefined; save(); });
 });
 document.addEventListener('keydown', event => {
-  if (dialogs.some(d => d.open) || !game || event.altKey || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+  if (!newDialog.hidden || dialogs.some(d => d.open) || !game || event.altKey || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); changed(() => event.shiftKey ? redo(game!) : undo(game!)); return;
   }
@@ -302,7 +315,7 @@ document.addEventListener('visibilitychange', () => { lastTick = undefined; clea
 window.addEventListener('pagehide', save);
 setInterval(() => {
   const now = Date.now(); appearance();
-  if (game && !locked(game) && !document.hidden && !dialogs.some(d => d.open)) {
+  if (game && newDialog.hidden && !locked(game) && !document.hidden && !dialogs.some(d => d.open)) {
     if (lastTick !== undefined) game.elapsed += Math.max(0, Math.min(5, (now - lastTick) / 1000));
     lastTick = now; $('#timer').textContent = time(game.elapsed);
     $('#timer').setAttribute('aria-label', `Elapsed time ${time(game.elapsed)}`);
@@ -319,18 +332,15 @@ try {
     if (envelope.version !== 1 || !validSave(envelope.game) || !Array.isArray(envelope.played) || !envelope.played.every((id: unknown) => typeof id === 'string')) throw new Error('Invalid save');
     game = envelope.game; played = envelope.played.slice(-500); selected = Math.max(0, game!.board.values.indexOf(0));
   }
-} catch { restoreError = "Your previous save couldn't be restored. A new puzzle is ready."; }
-if (!game) {
-  if (preferences.source === 'collection' && preferences.difficulty !== 'custom') {
-    game = createGame(choosePuzzle(preferences.difficulty), preferences.mode, preferences.strikeLimit);
-    selected = game.board.values.indexOf(0); played.push(game.puzzle.id); save();
-  } else {
-    // Restore the last generation request without blocking the main thread.
-    // A failed/cancelled request stays in the chooser rather than silently using Easy.
-    openNew(); newForm.requestSubmit();
-  }
-}
-render(); if (game && isOut(game)) outcome();
+} catch { restoreError = "Your previous save couldn't be restored."; }
+render();
+if (location.pathname === '/' || !game) openNew();
+else if (isOut(game)) outcome();
+window.addEventListener('popstate', () => {
+  cancelGeneration();
+  if (location.pathname === '/' || !game) openNew();
+  else { dialogs.forEach(d => { if (d.open) d.close(); }); showGame(); }
+});
 
 // Cache the production app only. The service worker derives hashed bundles from
 // /play/ so a deploy cannot leave an old page pointing at missing new assets.

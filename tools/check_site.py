@@ -18,7 +18,7 @@ class Check(HTMLParser):
     def handle_starttag(self, tag, attrs):
         values = dict(attrs)
         if tag == "script":
-            assert self.file == ROOT / "play" / "index.html", f"Scripts only belong in /play: {self.file}"
+            assert self.file in (ROOT / "index.html", ROOT / "play" / "index.html"), f"Scripts only belong in the lobby/game: {self.file}"
             assert values.get("src", "").startswith("/_astro/"), "Only bundled, first-party scripts are allowed"
         assert not any(key.startswith("on") for key in values), "Inline event handler"
         self.title |= tag == "title"

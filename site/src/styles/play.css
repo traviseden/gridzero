@@ -27,6 +27,10 @@ fieldset { border:0; padding:0; margin:0 0 24px; min-width:0; } legend { padding
 @media (max-height:750px) and (max-width:699px) { .game-app { gap:6px; --board-size:min(100vw,calc(100dvh - 292px - env(safe-area-inset-top) - env(safe-area-inset-bottom)),720px); } .key-row button { height:44px; font-size:26px; } .tools { height:44px; } }
 @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
 .game-status:has(#status:empty):has(#save-status:empty) { display:none; }
+.lobby { width:min(100% - 40px,480px); margin:0 auto; padding:calc(24px + env(safe-area-inset-top)) 0 24px; }
+.lobby .dialog-header { margin-bottom:32px; }
+#cancel-generation { display:block; margin:16px auto 0; min-height:44px; }
+#notice-title:empty, #notice-message:empty, .dialog-header:has(#notice-title:empty) { display:none; }
 @media (max-width:699px) {
   .game-app:has(#status:empty):has(#save-status:empty) { --board-size:min(100vw,calc(100dvh - 324px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
 }

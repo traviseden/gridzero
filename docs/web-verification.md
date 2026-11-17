@@ -1,10 +1,30 @@
-# Browser verification
+# Web verification and handoff
 
-The Astro site is statically generated. Only `/play/` loads JavaScript, with a
-first-party TypeScript game engine and a separate generator worker. The native
-Swift puzzle resource is imported directly at build time, not duplicated.
+## November 17, 2026 — web-only transition
 
-## Run
+- Pushed `walled-garden` from committed `main`, before any changes in this session.
+  It preserves the native apps and original website.
+- Committed the first web fixes (phone layout, terminal QR, interim completion
+  changes) as `ed5f483`.
+- Removed native projects, engines, tests, screenshots, SDK/signing helpers, and
+  native CI jobs. Moved the canonical puzzle data to `site/src/data/`.
+- `/` is the lobby: existing difficulty/mode/source/custom controls, Play, About.
+  No puzzle starts until Play. Preferences commit only on successful puzzle creation.
+- `/play/` restores a valid save; without one it opens the lobby. New game returns
+  to `/`. Completion offers New game / Admire puzzle, with no completion footer
+  or extra heading/summary.
+- About contains relevant existing web-app information. Privacy/Help/Credits and
+  their shared layout no longer advertise native apps or use marketing headings.
+- Manifest retains `id: /play/` for installed-app identity, with start URL/scope `/`.
+  Offline caching covers lobby, game, informational pages, engine, and worker.
+- Owner runs the dev server. Do not start or stop their server without a request.
+- Verified: all 11 core tests passed (including collection uniqueness/checksum),
+  Astro check/build passed, local links passed, 29 browser tests passed with one
+  WebKit offline skip. Reviewed lobby/board screenshots at 390×664.
+- Web-only redesign is a separate local commit after `ed5f483`; only the archive
+  branch has been pushed. Production deployment is not part of this checkpoint.
+
+## Run checks
 
 ```sh
 npm --prefix site ci
@@ -16,68 +36,35 @@ npx playwright install chromium webkit
 npm run test:ui
 ```
 
-Playwright serves `site/dist` through `tools/serve_site.py`, including the real
-Cloudflare `_headers` security policy. Tests use Chromium and iPhone WebKit.
+Browser tests serve `site/dist` using `tools/serve_site.py` with the production
+security headers. Chromium and iPhone WebKit cover selection, modes, settings,
+generation/cancellation, notes/history, persistence, completion navigation,
+keyboard/Reduce Motion, and responsive layout. Core tests verify all 8,000 puzzle
+solutions and collection checksum, solver/generation, game rules, and validation.
 
-## Live phone development
+Chromium tests offline lobby reload and collection/worker play. Playwright cannot
+control WebKit service workers; that test is skipped there. Physical iPhone and
+Android install/offline/update checks remain manual release gates.
 
-Run `npm --prefix site run dev` on the Mac. Astro listens on the LAN and prints
-a terminal QR code for `/play/` on each external IPv4 address. Connect phones to
-the same Wi-Fi; Astro live-reloads edits. If Astro starts in background mode,
-use `cd site && npx astro dev logs` to view the QR code, and `npx astro dev stop`
-to stop it. Plain LAN HTTP supports layout/gameplay testing; install/offline
-verification requires HTTPS (or localhost on the device itself).
+Layout cases: 280×480, 320×568, 375×667, 390×664, 390×844, 430×740, 430×932,
+600×500, 844×390, 768×1024, 1024×768, 1440×900. Phone full-width checks include
+browser-chrome-sized viewports; very short windows shrink the board to preserve
+reachable controls.
 
-### November 17, 2026 checkpoint
+## Local network development
 
-- Follow-up: removed the web completion footer and intermediate Another puzzle /
-  Done dialog. Completion opens New Puzzle directly; dismissing it preserves the
-  finished board. Current iOS source also has the rejected completion UI; need
-  the owner's earlier iOS reference before claiming exact parity.
-- Empty status rows no longer reserve phone height. Full-width checks include
-  browser-chrome-sized viewports 390×664 and 430×740. Extremely short viewports
-  still shrink the square board to keep controls reachable without scrolling.
-- Follow-up Astro check/build and completion/layout tests passed in Chromium and
-  iPhone WebKit (four tests). Owner controls the dev server; the agent stopped its
-  server on request. Next: physical-phone review and earlier iOS UI reference.
+`npm --prefix site run dev` listens on the LAN and prints a lobby QR code for
+external IPv4 addresses. Connect phones to the same Wi-Fi. Astro reloads edits.
+If Astro starts in background mode, `cd site && npx astro dev logs` shows the QR;
+`npx astro dev stop` stops it.
 
-- Extended the existing compact phone layout through 750px viewport height,
-  reclaiming space before shrinking the board. Verified the live LAN page at
-  375×667: board starts at x=0 and measures 375×375.
-- Astro check/build passed; existing ten-viewport no-scroll/square-board checks
-  passed in Chromium and iPhone WebKit.
-- Dev server started at `http://10.0.0.202:4321/play/`; QR output and HTTP 200
-  verified. This address depends on the Mac's current network.
-- Next: owner checks layout/live reload on physical phones. Fullscreen UI awaits
-  a decision about adding a menu control. Fullscreen API requires browser support
-  and a user gesture, not PWA installation; iPhone Home Screen standalone launch
-  is the reliable browser-chrome-free route. Tablet/desktop sizing retains the
-  shared specification's square-board caps and landscape arrangement.
+Plain LAN HTTP supports gameplay/layout tests. Physical-device PWA/offline testing
+requires HTTPS. Browser storage is local, not a backup. No persistent-storage
+request, export/import, or account sync has been added.
 
-## Coverage
+## Next owner checkpoint
 
-- All 8,000 collection puzzles have exactly one solution, with 2,000 per difficulty.
-- Solver consistency, ambiguity, completion, and node-budget-safe uniqueness.
-- Challenge rejection, strike persistence, strike-out, unlimited strikes, and
-  continuation in Classic; valid-board-only completion in Classic.
-- Manual note toggles, cleanup, Fill Notes based only on the current board,
-  whole-board undo/redo, and fixed clues.
-- Custom generation at exact empty counts; generated difficulty grading matches
-  the native naked-single / hidden-single / locked-candidate / naked-pair grader.
-- Save validation, browser reload persistence, invalid-save recovery, and visible
-  storage-failure messages.
-- Settings, themes, fixed per-game strike rules, keyboard controls, Reduce Motion,
-  worker cancellation, completion, restart, and explicit Classic checking.
-- Fresh Medium default, remembered successful difficulty with no game save,
-  cancelled choices not changing defaults, remembered generation on startup, and
-  recovery through the chooser after cancelling initial generation.
-- Stable standalone PWA manifest and actual 192/512 PNG icon dimensions.
-- Chromium offline reload, new collection puzzles, and offline worker generation.
-  The WebKit offline test is skipped because Playwright does not expose WebKit
-  service worker control; physical iPhone offline installation remains a manual check.
-- No-scroll, square-board layout checks at 280×480, 320×568, 375×667, 390×844,
-  430×932, 600×500, 844×390, 768×1024, 1024×768, and 1440×900.
-
-Browser storage is separate from native saves. Browser haptics depend on vibration
-API support and are unavailable on iOS Safari. Offline caching requires HTTPS or
-localhost and a successful initial load. Informational pages remain script-free.
+Review the lobby and completion flow on physical phones, including installed PWA
+navigation back to `/`. There is deliberately no new Resume control on the lobby;
+`/play/` still restores the current game. Any additional lobby controls require
+the owner's design decision.

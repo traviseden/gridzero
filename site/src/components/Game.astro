@@ -1,0 +1,121 @@
+---
+import '../styles/play.css';
+const levels = ['easy', 'medium', 'hard', 'expert', 'custom'];
+const lobby = Astro.url.pathname === '/';
+---
+<!doctype html>
+<html lang="en" data-theme="ink">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#faf9f5" />
+    <meta name="description" content="Play GridZero Sudoku. Challenge or Classic, pencil notes, 8,000 puzzles, and zero distractions. Free, private, and offline-ready." />
+    <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+    <link rel="icon" href="/assets/mark.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png" />
+    <title>Play Sudoku — GridZero</title>
+  </head>
+  <body>
+    <main id="main" class="game-app" aria-label="GridZero Sudoku" hidden={lobby}>
+      <header class="game-header">
+        <a href="/" class="game-wordmark">GridZero</a>
+        <button id="menu-open" class="round-button" aria-label="Game menu" aria-haspopup="dialog">•••</button>
+      </header>
+      <div class="metadata">
+        <div><strong id="difficulty">Medium</strong><span id="mode">Challenge</span></div>
+        <div class="game-metrics"><span id="timer" hidden>0:00</span><span id="strikes" aria-label="0 of 3 strikes"></span></div>
+      </div>
+      <div id="board" class="board" role="group" aria-label="Sudoku board. Use arrow keys to select cells and number keys to enter.">
+        {Array.from({ length: 81 }, (_, i) => <button class:list={['cell', { 'box-right': i % 9 === 2 || i % 9 === 5, 'box-bottom': Math.floor(i / 9) === 2 || Math.floor(i / 9) === 5 }]} data-cell={i} tabindex={i === 0 ? 0 : -1} aria-label={`Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}, empty`}><span class="value"></span><span class="notes" aria-hidden="true">{Array.from({ length: 9 }, (_, d) => <span data-note={d + 1}></span>)}</span></button>)}
+      </div>
+      <div class="tools" aria-label="Board tools">
+        <button id="undo" disabled><span aria-hidden="true">↶</span>Undo</button>
+        <button id="erase" disabled><span aria-hidden="true">⌫</span>Erase</button>
+        <button id="notes" aria-pressed="false"><span aria-hidden="true">✎</span>Notes</button>
+      </div>
+      <div class="keypad" aria-label="Number keypad">
+        <div class="key-row">{[1, 3, 5, 7, 9].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
+        <div class="key-row even">{[2, 4, 6, 8].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
+      </div>
+      <div class="game-status"><p id="status" role="status" aria-live="polite">Preparing your puzzle…</p><p id="save-status" role="status"></p></div>
+    </main>
+    <noscript><div class="no-script">The browser game needs JavaScript. No data leaves your device. <a href="/">Back to GridZero</a>.</div></noscript>
+    <dialog id="menu-dialog" aria-labelledby="menu-title">
+      <header class="dialog-header"><h2 id="menu-title">Game menu</h2><button data-close aria-label="Close game menu">Done</button></header>
+      <div class="menu-actions">
+        <button data-action="new">New game <span>＋</span></button>
+        <button data-action="settings">Settings <span>☷</span></button>
+        <button data-action="check" hidden>Check Board <span>✓</span></button>
+        <button data-action="fill" hidden>Fill Notes <span>✎</span></button>
+        <button data-action="redo">Redo <span>↷</span></button>
+        <button data-action="restart">Restart Puzzle <span>↻</span></button>
+      </div>
+      <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/">Home</a></nav>
+    </dialog>
+    <main id="new-dialog" class="lobby" hidden={!lobby} aria-label="New game">
+      <header class="dialog-header"><a class="game-wordmark" href="/">GridZero</a><a href="/about/">About</a></header>
+      <form id="new-form">
+        <fieldset aria-label="Puzzle">
+          <label>Difficulty<select name="difficulty">{levels.map(l => <option value={l}>{l[0].toUpperCase() + l.slice(1)}</option>)}</select></label>
+          <label id="custom-field" hidden>Empty squares <output id="empty-count">45</output><input name="empty" type="range" min="20" max="60" step="1" value="45" /></label>
+        </fieldset>
+        <fieldset aria-label="Mode and source">
+          <div class="mode-row">
+            <label>Mode<select name="mode"><option value="challenge">Challenge</option><option value="classic">Classic</option></select></label>
+            <button type="button" id="mode-info" aria-label="About game mode" aria-haspopup="dialog">ⓘ</button>
+          </div>
+          <label>Puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
+        </fieldset>
+        <p id="generation-error" role="alert" class="error"></p>
+        <button class="primary" id="start-puzzle" type="submit">Play</button>
+        <button id="cancel-generation" type="button" hidden>Cancel</button>
+      </form>
+      <p id="lobby-error" role="status" class="error"></p>
+    </main>
+    <dialog id="mode-info-dialog" aria-labelledby="mode-info-title" aria-describedby="mode-info-message">
+      <header class="dialog-header"><h2 id="mode-info-title"></h2><button data-close>Done</button></header>
+      <p id="mode-info-message"></p>
+    </dialog>
+    <dialog id="settings-dialog" aria-labelledby="settings-title">
+      <header class="dialog-header"><h2 id="settings-title">Settings</h2><button data-close>Done</button></header>
+      <form id="settings-form">
+        <fieldset><legend>Appearance</legend>
+          <div class="theme-picker" role="group" aria-label="Color theme">{['ink', 'moss', 'clay'].map(t => <button type="button" data-theme-choice={t} aria-pressed={t === 'ink'}><span class={`swatch ${t}`}></span>{t[0].toUpperCase() + t.slice(1)}</button>)}</div>
+          <label>Appearance<select name="appearance" aria-label="Appearance"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option><option value="scheduled">Scheduled</option></select></label>
+          <div id="schedule" hidden><label>Light at<input type="time" name="lightAt" value="07:00" /></label><label>Dark at<input type="time" name="darkAt" value="19:00" /></label></div>
+        </fieldset>
+        <fieldset><legend>New puzzles</legend>
+          <label>Default puzzle source<select name="source"><option value="collection">Puzzle Collection</option><option value="generated">Generated on Device</option></select></label>
+          <div class="strike-limit-row">
+            <label for="strike-limit">Challenge strike limit</label>
+            <div class="number-stepper">
+              <button type="button" id="strike-decrease" aria-label="Decrease strike limit">−</button>
+              <input id="strike-limit" name="strikeLimit" type="number" min="1" max="5" step="1" inputmode="numeric" value="3" />
+              <button type="button" id="strike-increase" aria-label="Increase strike limit">+</button>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset><legend>Notes</legend>
+          <label class="toggle">Enable Fill Notes<input name="allowAutofill" type="checkbox" /></label>
+          <label class="toggle">Automatically clean up notes<input name="cleanupNotes" type="checkbox" /></label>
+        </fieldset>
+        <fieldset><legend>Gameplay</legend>
+          <label class="toggle">Highlight related cells<input name="highlightPeers" type="checkbox" checked /></label>
+          <label class="toggle">Highlight matching numbers<input name="highlightMatching" type="checkbox" checked /></label>
+          <label class="toggle">Show timer<input name="showTimer" type="checkbox" /></label>
+          <label class="toggle">Gentle haptics<input name="haptics" type="checkbox" checked /></label>
+        </fieldset>
+        <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/credits/">Credits &amp; licenses</a><a href="https://github.com/traviseden/gridzero">Source</a></nav>
+      </form>
+    </dialog>
+    <dialog id="notice-dialog" aria-label="Game actions">
+      <header class="dialog-header"><h2 id="notice-title"></h2></header>
+      <p id="notice-message"></p><div id="notice-actions" class="notice-actions"></div>
+    </dialog>
+    <script>
+      import '../game/app';
+    </script>
+  </body>
+</html>
