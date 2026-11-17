@@ -47,9 +47,43 @@ control WebKit service workers; that test is skipped there. Physical iPhone and
 Android install/offline/update checks remain manual release gates.
 
 Layout cases: 280×480, 320×568, 375×667, 390×664, 390×844, 430×740, 430×932,
-600×500, 844×390, 768×1024, 1024×768, 1440×900. Phone full-width checks include
-browser-chrome-sized viewports; very short windows shrink the board to preserve
-reachable controls.
+600×500, 844×390, 768×1024, 1024×768, 1440×900.
+
+Follow-up: owner requires full page width unconditionally. Removed all board
+height constraints, width caps, and side-by-side landscape layout. The square
+board is 100% page width; controls follow below, with vertical scrolling as needed.
+Fresh lobby → Play tests verify full width at every size and with visible status
+text. Astro check/build and both Chromium/WebKit layout tests passed. Next:
+owner reviews the regular-browser phone layout.
+
+Follow-up: moved Undo / Erase / Notes below the number keypad in document order,
+so visual, keyboard, and screen-reader order agree.
+
+## Entry transition and lobby refinement
+
+- Accepted travel is now 600ms (previously 240ms); rejection is 600ms travel plus
+  450ms recoil. The digit stays visible during travel and lands at the cell's
+  computed font size/weight instead of fading out before the value appears.
+- Explicit idle/travelling/recoiling state guards gameplay input. Saves commit
+  immediately, presentation waits for arrival, and outcomes wait for settling.
+  Rapid taps no longer cancel an active flight or accumulate duplicate strikes.
+- Menu, navigation, resize, visibility, and Reduce Motion interruptions settle
+  the saved state and clean up animations. Document-positioned flights follow
+  scrolling instead of staying attached to the viewport.
+- Lobby restyled using existing controls/copy only. Reviewed phone light,
+  custom/dark, and desktop screenshots.
+- Astro check/build passed; 33 browser tests passed, one WebKit offline skip.
+  Added coverage for rapid input, delayed strike feedback, outcome ordering,
+  menu/Reduce Motion interruption, and saved moves after interruption.
+- Next: owner judges animation pacing and lobby appearance on physical phones.
+
+Follow-up: travel shortened to 450ms at the owner's request; recoil remains
+450ms. Astro's development toolbar is disabled in `site/astro.config.mjs`.
+
+Latest pacing adjustment: travel is 350ms; recoil remains 450ms.
+
+Release checks for the 350ms build: Astro check/build, link validation, all 11
+core tests, and 33 browser tests passed (one existing WebKit offline skip).
 
 ## Local network development
 

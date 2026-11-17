@@ -42,7 +42,10 @@ test('manual notes, undo, correct entries, and persistence', async ({ page }) =>
 });
 test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
+  for (let i = 0; i < 3; i++) {
+    await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
+    await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  }
   await expect(page.locator('#notice-title')).toHaveText('Strike limit reached');
   expect((await saved(page)).strikes).toBe(3); expect((await saved(page)).board.values[2]).toBe(0);
   await page.reload(); await expect(page.locator('#notice-dialog')).toBeVisible();
@@ -113,6 +116,8 @@ test('completion, restart, and Classic checking', async ({ page }) => {
   const g = fixture(); g.board.values = [...g.puzzle.solution]; g.board.values[2] = 0;
   await load(page, g); await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'travelling');
+  await expect(page.locator('#notice-dialog')).not.toBeVisible();
   await expect(page.locator('#notice-dialog')).toBeVisible();
   await page.getByRole('button', { name: 'Admire puzzle', exact: true }).click();
   await expect(page.locator('#status')).toBeEmpty();
@@ -140,6 +145,50 @@ test('keyboard support and reduced motion', async ({ page }) => {
   await page.keyboard.press('Control+z'); await expect(page.locator('[data-cell="2"] .value')).toHaveText('');
   await page.keyboard.press('ArrowRight'); await expect(page.locator('[data-cell="3"]')).toHaveAttribute('aria-pressed', 'true');
 });
+test('entry transitions serialize rapid input and show strikes at arrival', async ({ page }) => {
+  await load(page); await page.locator('[data-cell="2"]').click();
+  await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'travelling');
+  expect(await page.locator('.entry-flight').evaluate(e => e.getAnimations()[0].effect!.getTiming().duration)).toBe(350);
+  await expect(page.locator('[data-cell="2"] .value')).toBeEmpty();
+  await page.evaluate(() => {
+    for (const selector of ['[data-digit="1"]', '#notes', '#erase', '[data-cell="3"]']) {
+      document.querySelector<HTMLButtonElement>(selector)!.click();
+    }
+  });
+  expect((await saved(page)).strikes).toBe(0);
+  expect((await saved(page)).undoStack).toHaveLength(1);
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await expect(page.locator('#notes')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('[data-cell="2"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
+  await expect(page.locator('.strike.used')).toHaveCount(0);
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'recoiling');
+  await expect(page.locator('.strike.used')).toHaveCount(1);
+  await page.evaluate(() => document.querySelector<HTMLButtonElement>('[data-digit="1"]')!.click());
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  expect((await saved(page)).strikes).toBe(1);
+  await expect(page.locator('.entry-flight, .cell.flying')).toHaveCount(0);
+});
+test('interrupting a flight settles the saved move and restores the cell', async ({ page }) => {
+  await load(page); await page.locator('[data-cell="2"]').click();
+  await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await page.getByRole('button', { name: 'Game menu', exact: true }).click();
+  await expect(page.locator('#menu-dialog')).toBeVisible();
+  await expect(page.locator('.entry-flight, .cell.flying')).toHaveCount(0);
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await page.locator('#menu-dialog [data-close]').click();
+  await page.locator('[data-cell="3"]').click();
+  await page.getByRole('button', { name: 'Enter 6', exact: true }).click();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  await expect(page.locator('.entry-flight, .cell.flying')).toHaveCount(0);
+  await expect(page.locator('[data-cell="3"] .value')).toHaveText('6');
+  await page.reload();
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await expect(page.locator('[data-cell="3"] .value')).toHaveText('6');
+});
 test('invalid saves recover and storage failures are visible', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('gridzero.web.game.v1', '{bad'));
   await page.goto('/play/'); await expect(page.locator('#lobby-error')).toContainText('previous save');
@@ -165,21 +214,25 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
 });
-test('phone, tablet, desktop, and small-window layouts fit without scrolling', async ({ page }) => {
-  await load(page);
+test('fresh Play always fills the page width, including short browser windows', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play', exact: true }).click();
   for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [844, 390], [1024, 768], [768, 1024], [1440, 900], [600, 500], [280, 480]]) {
     await page.setViewportSize({ width, height });
     const boxes = await page.locator('#board, .keypad, .tools').evaluateAll(elements => elements.map(e => {
       const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
     }));
-    for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(width + 1); expect(box.bottom).toBeLessThanOrEqual(height + 1); }
+    const pageWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(pageWidth + 1); }
     expect(Math.abs(boxes[0].width - boxes[0].height)).toBeLessThan(1);
-    if (width < 700 && height >= width + 266) {
-      expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(width);
-    }
-    const overflow = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight + 1 || document.documentElement.scrollWidth > innerWidth + 1);
+    expect(boxes[0].x).toBe(0);
+    expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(pageWidth);
+    expect(boxes[1].y).toBeGreaterThanOrEqual(boxes[0].bottom);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow, `${width}×${height}`).toBe(false);
   }
+  await page.locator('#status').evaluate(element => { element.textContent = 'Incorrect number'; });
+  expect((await page.locator('#board').boundingBox())!.width).toBe(await page.evaluate(() => document.documentElement.clientWidth));
 });
 
 test('lobby defaults Medium and remembers only successfully started choices', async ({ page }) => {

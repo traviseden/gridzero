@@ -22,5 +22,6 @@ android/env.local.sh
 site/node_modules/
 site/dist/
 site/.astro/
+.astro/
 site/test-results/
 site/playwright-report/

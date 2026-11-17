@@ -15,7 +15,11 @@ const systemScheme = matchMedia('(prefers-color-scheme: dark)'), reducedMotion =
 let preferences = { ...defaults }, game: Game | undefined, played: string[] = [], selected = 0, pencil = false;
 let checked = new Set<number>(), errorCell = -1, feedbackToken = 0, worker: Worker | undefined;
 let lastTick: number | undefined, saveError = '', prefError = '', restoreError = '', generating = false;
-const flights = new Set<HTMLElement>();
+type EntryTransition = { phase: 'idle' } | {
+  phase: 'travelling' | 'recoiling'; index: number; result: Result;
+  flight: HTMLElement; animation?: Animation; feedbackShown: boolean;
+};
+let transition: EntryTransition = { phase: 'idle' };
 
 function save() {
   if (!game) return;
@@ -96,8 +100,7 @@ function render() {
   $('#save-status').textContent = saveError || prefError || restoreError;
 }
 function clearFlights() {
-  for (const flight of flights) { flight.getAnimations().forEach(animation => animation.cancel()); flight.remove(); }
-  flights.clear(); cells.forEach(cell => cell.classList.remove('flying'));
+  finishEntry(false);
 }
 function openDialog(dialog: HTMLDialogElement) {
   clearFlights(); lastTick = undefined; save();
@@ -126,39 +129,80 @@ function outcome() {
   ]);
 }
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
+function entryFeedback(result: Result, index: number) {
+  errorCell = result === 'strike' ? index : -1;
+  haptic(result === 'strike'); render();
+}
+function finishEntry(presentOutcome = true) {
+  if (transition.phase === 'idle') return;
+  const active = transition;
+  transition = { phase: 'idle' };
+  active.animation?.cancel(); active.flight.remove();
+  cells[active.index].classList.remove('flying');
+  $('#board').setAttribute('aria-busy', 'false');
+  $('#main').dataset.entryPhase = 'idle';
+  if (!active.feedbackShown) entryFeedback(active.result, active.index);
+  else render();
+  if (active.result === 'strike') {
+    const token = feedbackToken;
+    setTimeout(() => { if (feedbackToken === token) { errorCell = -1; render(); } }, 700);
+  }
+  if (presentOutcome && game && (active.result === 'completed' || isOut(game))) outcome();
+}
 function animateEntry(digit: number, index: number, result: Result) {
-  if (pencil || reducedMotion.matches || !canAnimate()) return;
-  const source = keys.find(k => Number(k.dataset.digit) === digit)!.getBoundingClientRect();
+  const key = keys.find(k => Number(k.dataset.digit) === digit)!;
+  const source = key.getBoundingClientRect();
   const target = cells[index].getBoundingClientRect();
+  const sourceFont = parseFloat(getComputedStyle(key).fontSize);
+  const targetFont = parseFloat(getComputedStyle(cells[index]).fontSize);
   const flight = document.createElement('span'); flight.className = 'entry-flight'; flight.textContent = String(digit); flight.setAttribute('aria-hidden', 'true');
-  flight.style.left = `${source.x + source.width / 2}px`; flight.style.top = `${source.y + source.height / 2}px`;
-  document.body.append(flight); flights.add(flight);
-  if (result !== 'strike') cells[index].classList.add('flying');
+  flight.style.fontSize = `${sourceFont}px`;
+  flight.style.fontWeight = getComputedStyle(cells[index]).fontWeight;
+  flight.style.left = `${source.x + source.width / 2 + scrollX}px`; flight.style.top = `${source.y + source.height / 2 + scrollY}px`;
+  const active: Exclude<EntryTransition, { phase: 'idle' }> = { phase: 'travelling', index, result, flight, feedbackShown: false };
+  transition = active;
+  $('#main').dataset.entryPhase = 'travelling';
+  $('#board').setAttribute('aria-busy', 'true');
+  document.body.append(flight);
+  cells[index].classList.add('flying');
   const dx = target.x + target.width / 2 - source.x - source.width / 2, dy = target.y + target.height / 2 - source.y - source.height / 2;
   const base = 'translate(-50%,-50%)';
-  const frames = result === 'strike' ? [
-    { transform: base, color: 'var(--accent)', opacity: 1 },
-    { transform: `${base} translate(${dx}px,${dy}px)`, color: 'var(--error)', opacity: 1, offset: .5 },
-    { transform: `${base} scale(.75)`, color: 'var(--error)', opacity: 0 },
-  ] : [{ transform: base, opacity: 1 }, { transform: `${base} translate(${dx}px,${dy}px) scale(${target.width * .57 / 30})`, opacity: 0 }];
-  const animation = flight.animate(frames, { duration: result === 'strike' ? 500 : 240, easing: 'ease-out' });
-  animation.onfinish = () => { flight.remove(); flights.delete(flight); cells[index].classList.remove('flying'); };
+  const destination = `${base} translate(${dx}px,${dy}px) scale(${targetFont / sourceFont})`;
+  active.animation = flight.animate([{ transform: base }, { transform: destination }], { duration: 350, easing: 'cubic-bezier(.2,.65,.3,1)', fill: 'forwards' });
+  active.animation.onfinish = () => {
+    if (transition !== active) return;
+    if (result !== 'strike') { finishEntry(); return; }
+    active.phase = 'recoiling'; active.feedbackShown = true;
+    $('#main').dataset.entryPhase = 'recoiling';
+    entryFeedback(result, index);
+    cells[index].classList.remove('flying');
+    active.animation!.cancel();
+    active.animation = flight.animate([
+      { transform: destination, color: 'var(--error)', opacity: 1 },
+      { transform: `${base} scale(.75)`, color: 'var(--error)', opacity: 0 },
+    ], { duration: 450, easing: 'ease-in', fill: 'forwards' });
+    active.animation.onfinish = () => { if (transition === active) finishEntry(); };
+  };
 }
 function canAnimate() { return typeof HTMLElement.prototype.animate === 'function'; }
 function entry(digit: number) {
-  if (!game) return;
-  clearFlights();
+  if (!game || transition.phase !== 'idle') return;
+  errorCell = -1; feedbackToken++; render();
   checked.clear(); const result = enter(game, digit, selected, pencil, preferences.cleanupNotes);
   if (result === 'ignored') return;
-  const token = ++feedbackToken; errorCell = result === 'strike' ? selected : -1;
-  haptic(result === 'strike'); render(); save(); animateEntry(digit, selected, result);
-  if (result === 'strike') {
-    $('#status').textContent = `Strike ${game.strikes}${game.strikeLimit ? ` of ${game.strikeLimit}` : ''}`;
-    setTimeout(() => { if (feedbackToken === token) { errorCell = -1; render(); } }, 1100);
+  save();
+  if (!pencil && !reducedMotion.matches && canAnimate()) {
+    animateEntry(digit, selected, result);
+  } else {
+    entryFeedback(result, selected);
+    if (result === 'strike') {
+      const token = feedbackToken;
+      setTimeout(() => { if (feedbackToken === token) { errorCell = -1; render(); } }, 700);
+    }
+    if (result === 'completed' || isOut(game)) outcome();
   }
-  if (result === 'completed' || isOut(game)) outcome();
 }
-function changed(action: () => void) { clearFlights(); action(); checked.clear(); errorCell = -1; feedbackToken++; render(); save(); }
+function changed(action: () => void) { if (transition.phase !== 'idle') return; action(); checked.clear(); errorCell = -1; feedbackToken++; render(); save(); }
 function restart() {
   if (!game) return;
   changed(() => { game = createGame(game!.puzzle, game!.mode, game!.strikeLimit); selected = Math.max(0, game.board.values.indexOf(0)); pencil = false; lastTick = undefined; });
@@ -272,12 +316,12 @@ for (const [id, delta] of [['strike-decrease', -1], ['strike-increase', 1]] as c
     updateSettings(); savePreferences();
   });
 }
-cells.forEach((cell, i) => cell.addEventListener('click', () => { selected = i; render(); }));
+cells.forEach((cell, i) => cell.addEventListener('click', () => { if (transition.phase !== 'idle') return; selected = i; render(); }));
 keys.forEach(key => key.addEventListener('click', () => entry(Number(key.dataset.digit))));
 $('#undo').addEventListener('click', () => changed(() => { if (game) undo(game); }));
 $('#erase').addEventListener('click', () => changed(() => { if (game) erase(game, selected); }));
-$('#notes').addEventListener('click', () => { pencil = !pencil; haptic(); clearFlights(); render(); });
-$('#menu-open').addEventListener('click', () => { render(); openDialog($<HTMLDialogElement>('#menu-dialog')); });
+$('#notes').addEventListener('click', () => { if (transition.phase !== 'idle') return; pencil = !pencil; haptic(); render(); });
+$('#menu-open').addEventListener('click', () => { clearFlights(); render(); openDialog($<HTMLDialogElement>('#menu-dialog')); });
 document.querySelectorAll<HTMLElement>('[data-action]').forEach(button => button.addEventListener('click', () => {
   $<HTMLDialogElement>('#menu-dialog').close();
   if (button.dataset.action === 'new') { openNew(); return; }
@@ -299,6 +343,10 @@ dialogs.forEach(dialog => {
 });
 document.addEventListener('keydown', event => {
   if (!newDialog.hidden || dialogs.some(d => d.open) || !game || event.altKey || event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
+  if (transition.phase !== 'idle') {
+    if (/^[1-9n]$/i.test(event.key) || ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Backspace', 'Delete', 'z'].includes(event.key)) event.preventDefault();
+    return;
+  }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault(); changed(() => event.shiftKey ? redo(game!) : undo(game!)); return;
   }
@@ -309,9 +357,9 @@ document.addEventListener('keydown', event => {
   else if (event.key === 'Backspace' || event.key === 'Delete') { event.preventDefault(); changed(() => erase(game!, selected)); }
   else if (event.key.toLowerCase() === 'n' && !locked(game)) { event.preventDefault(); pencil = !pencil; render(); }
 });
-systemScheme.addEventListener('change', appearance); reducedMotion.addEventListener('change', clearFlights);
-window.addEventListener('resize', clearFlights);
-document.addEventListener('visibilitychange', () => { lastTick = undefined; clearFlights(); save(); });
+systemScheme.addEventListener('change', appearance); reducedMotion.addEventListener('change', () => finishEntry());
+window.addEventListener('resize', () => finishEntry());
+document.addEventListener('visibilitychange', () => { lastTick = undefined; finishEntry(); save(); });
 window.addEventListener('pagehide', save);
 setInterval(() => {
   const now = Date.now(); appearance();

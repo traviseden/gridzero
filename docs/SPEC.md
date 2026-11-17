@@ -45,21 +45,30 @@ belong on About/Help.
 - Fill Notes is opt-in and uses current-board candidates, never the solution.
 - Whole-board undo/redo covers entries, erasures, and notes, up to 300 states.
   New edits clear redo. Completion locks gameplay/history.
-- Accepted entries travel from keypad to cell; rejections turn red and recoil.
-  Reduce Motion uses immediate feedback.
+- Entries travel from keypad to cell in 350ms; rejections turn red at arrival and
+  recoil for 450ms. Explicit idle/travelling/recoiling states serialize input.
+  During travel/recoil, ignore additional gameplay input rather than cancelling
+  the flight or applying duplicate strikes. Persist the move immediately, present
+  cell/strike feedback on arrival, and show completion/strike-out only after settling.
+  Menu/navigation/resize interruptions settle the committed move and remove the
+  flight. Scrolling carries the flight with the document. Reduce Motion and manual
+  notes use immediate feedback.
 
 ## Layout, preferences, and accessibility
 
-- Full-width square phone board when height permits; shrink on short windows so
-  gameplay controls remain reachable without scrolling. No empty status-row budget.
-- Tablet board cap 720 CSS pixels; keypad cap 480. Landscape puts keypad beside board.
+- The square board is always 100% of the page width, in browsers and installed
+  PWAs, at every viewport size. No height-based shrinking or tablet/desktop caps.
+  Tools and keypad follow below; allow vertical scrolling when needed.
+  Keypad remains capped at 480 CSS pixels. No empty status-row budget.
 - Keypad: 1 3 5 7 9 above centered, staggered 2 4 6 8.
-- Primary tools: Undo, Erase, Notes. Menu: New game, Settings, Classic-only Check
+- Primary tools below the number keypad: Undo, Erase, Notes. Menu: New game, Settings, Classic-only Check
   Board, opt-in Fill Notes, Redo, Restart.
 - Show difficulty, mode, Challenge strikes, and optional timer. Small limits use Xs.
 - Ink/Moss/Clay themes; System appearance by default. Scheduled defaults 07:00/19:00
   using the local clock. Timer hidden, haptics on where supported, peer/matching
   highlights on; notes, Fill Notes, and cleanup off by default.
+- Lobby styling uses a narrow centered column, stacked labels, full-width 56px
+  controls, consistent spacing, and the existing theme palette. No added content.
 - Cells expose row, column, value/clue, notes, selection, and explicit errors.
   Dialogs manage focus. Keyboard: arrows, 1–9, N, Backspace/Delete,
   Cmd/Ctrl+Z, Shift for redo.

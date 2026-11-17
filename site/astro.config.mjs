@@ -5,6 +5,7 @@ import qrcode from 'qrcode-terminal';
 export default defineConfig({
   site: 'https://gridzero.win',
   output: 'static',
+  devToolbar: { enabled: false },
   trailingSlash: 'always',
   build: { inlineStylesheets: 'never' },
   integrations: [{
