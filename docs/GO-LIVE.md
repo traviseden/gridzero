@@ -28,4 +28,25 @@ Native releases are retired; their previous gates remain on `walled-garden`.
   skip; Astro check/build and local-link validation passed.
 - Physical-device install/offline/update review remains manual. Existing clients
   may need all GridZero tabs/windows closed and reopened to activate a waiting
-  service-worker update; do not clear site data to update.
+   service-worker update; do not clear site data to update.
+
+## November 18, 2026 layout deployment
+
+- Application commit: `0a4a3e4`, pushed to GitHub `main`.
+- Deployed `site/dist` to Cloudflare Pages project `gridzero`, production branch
+  `main`, using Wrangler 4 and existing OAuth credentials passed privately via
+  the subprocess environment.
+- Deployment: https://be1b43c3.gridzero.pages.dev
+- Production: https://gridzero.win/
+- All 20 served production files match the checked local build byte-for-byte.
+- Production WebKit smoke passed: vertically centered landscape lobby, Play,
+  full-height board, 32px tool icons, actual strike-out, reload persistence,
+  focused New Puzzle default, and Enter returning to the lobby. No JS errors.
+- The first smoke attempt injected a replacement save into a running game;
+  the normal page-hide save overwrote that fixture. Verification was corrected
+  to lose the actual game through keypad input and passed.
+- Local release checks: 13 core tests and 50 browser tests passed, four existing
+  WebKit service-worker skips; Astro check/build, local-link and whitespace checks
+  passed.
+- Owner approved the visual changes. Next checkpoint: physical-device review of
+  the deployed layout and installed-PWA update behavior.
