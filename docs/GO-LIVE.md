@@ -50,3 +50,16 @@ Native releases are retired; their previous gates remain on `walled-garden`.
   passed.
 - Owner approved the visual changes. Next checkpoint: physical-device review of
   the deployed layout and installed-PWA update behavior.
+
+### Desktop correction
+
+- Application commit: `0f1ef4d`, pushed to `main`.
+- Deployment: https://7d738c50.gridzero.pages.dev
+- Production: https://gridzero.win/
+- All 20 served files match the local build. Live Chromium smoke verified
+  540px boards at 900×1100 and 1440×900, 454px at 800×600, and the existing
+  390px phone boards in both orientations. Desktop controls remain fully visible
+  without page scrolling; no JavaScript errors.
+- Build, 13 core tests, 50 browser tests, link and whitespace checks passed;
+  four existing WebKit service-worker skips remain.
+- Next checkpoint: owner reviews the corrected desktop size in their window.
