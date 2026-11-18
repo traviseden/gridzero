@@ -151,3 +151,220 @@ Review the lobby and completion flow on physical phones, including installed PWA
 navigation back to `/`. There is deliberately no new Resume control on the lobby;
 `/play/` still restores the current game. Any additional lobby controls require
 the owner's design decision.
+
+## November 18, 2026 — paper-puzzle design exploration
+
+- Owner chose a beautifully typeset paper-puzzle direction rather than native-app
+  styling. Priorities: largest practical board, viewport fit, and good phone,
+  iPad, and desktop layouts. Exploring odd digits left / even digits right.
+- No UI implementation yet. Clarify whether the requested side keypads and
+  reported phone breakage refer to portrait or landscape, and agree on the new
+  viewport-fit rule before replacing SPEC.md's unconditional full-width rule.
+- Inspected production with isolated Playwright browsers: WebKit at 390×664,
+  844×390, and 1024×768; Chromium at 1440×900. The board remains viewport-width
+  square. Document heights were respectively 664, 1168, 1348, and 1816 pixels.
+  Phone portrait fit at the tested size; landscape overflow was reproduced.
+  Physical-device/browser chrome and the owner's exact portrait failure are
+  not yet verified.
+- Confirmed Settings opens through the game's top-right menu, and Ink/Moss/Clay
+  choices are present. Lobby has no Settings entry. These themes currently change
+  accent color, not the paper/background palette.
+- Screenshots saved outside the repository in the session temporary directory,
+  `gridzero-layout-review/`. Existing localhost:4321 belongs to another project;
+  no GridZero dev server was started.
+- Next: confirm orientation/layout intent and approval for lobby Settings access;
+  then prototype the agreed responsive composition and typography for owner review.
+
+### Landscape prototype and lobby Settings
+
+- Owner confirmed the failure was landscape, portrait layout is good, and approved
+  Settings beside About in the lobby.
+- Added the lobby Settings button using the existing dialog. Preferences work
+  without creating a game; pending puzzle choices survive opening/closing it.
+  Closing restores focus explicitly for Safari. Changing the default source
+  updates the lobby source, and preference-save errors use the existing lobby
+  error area. Settings is disabled during generation.
+- Landscape at widths of at least 560px uses CSS Grid: one compact header row,
+  a viewport-fitted square board, odd digits left, even digits right, and tools
+  below the even digits. The same buttons and entry animation remain in use.
+  Safe-area insets and dynamic viewport height participate in sizing. Very short
+  windows can scroll to preserve touch targets. Portrait retains its width-filling
+  board and two keypad rows. Updated SPEC.md to replace the old unconditional
+  width rule.
+- Screenshot review: phone portrait 390×664; landscape 844×390 and 568×320;
+  iPad-sized 1024×768; desktop 1440×900. Landscape boards measure 322, 252,
+  700, and 832 pixels respectively, and each normal gameplay page fits its viewport.
+  Reviewed Ink/light, Moss/light, Clay/light, and Clay/dark across these views,
+  plus lobby and lobby Settings. Images are in the same temporary
+  `gridzero-layout-review/` folder with `-after.png` filenames.
+- Verification: all 13 core tests, Astro check/build, link validation, and diff
+  whitespace checks passed. Full browser run: 42 passed, four existing WebKit
+  service-worker skips, and two failures in the new Settings test. Fixed Safari
+  focus restoration and the test's source selector; all eight focused Settings,
+  responsive-layout, and rotation/entry checks then passed in Chromium/WebKit.
+  Layout assertions cover 15 viewport sizes, touch targets, side placement,
+  overlap, and scrolling. Build retains the existing large-chunk warning.
+- Changes are local, not deployed. Test preview servers were stopped after use;
+  the owner's other project's development server was untouched.
+- Next owner checkpoint: review the landscape composition and physical-device
+  rotation/browser chrome, then choose a specific paper-puzzle typography treatment.
+  Typeface, grid-line, and icon redesigns are still proposals awaiting visual
+  decisions; no font or asset dependencies were added.
+
+### Landscape edge controls refinement
+
+- Owner liked the composition and requested number buttons nearer the left/right
+  edges, with Undo/Erase/Notes up top.
+- Landscape digits now align to the outer safe-area padding (8px plus inset).
+  Tools sit at the top of the right-hand control area, above the even digits.
+  Updated SPEC.md and existing layout assertions for the new positions.
+- Astro check/build and all four targeted Chromium/WebKit layout and rotation
+  checks passed; diff whitespace check passed. Reviewed WebKit screenshots at
+  844×390, 568×320, and 1024×768, saved as `*-landscape-edges.png` in the existing
+  temporary review folder. Physical safe-area/browser-chrome checks still await
+  owner review. Local changes remain undeployed.
+- Next checkpoint: owner reviews this control placement, then paper typography.
+
+### Full-height board with right-hand controls
+
+- Owner reiterated that maximum board size is fundamental and requested moving
+  game information and tools beneath GridZero on the right, with the portrait
+  number arrangement transposed to the right as well.
+- Removed the landscape header-height reservation. Board is now on the left;
+  GridZero, difficulty/mode, timer/strikes, menu, and tools occupy the next column.
+  The far-right keypad has adjacent odd/even columns with even digits centered
+  between odds. All positions use the original controls and CSS only.
+- Board fills the safe viewport height wherever width permits. Nearly square
+  windows use remaining width after minimum usable controls. Updated SPEC.md
+  and layout coverage to explicitly protect full-height board sizing.
+- Reviewed screenshots at 844×390, 568×320, 1024×768, 1440×900, and 600×500.
+  Board sides are respectively 390, 320, 768, 900, and 366 pixels. Normal gameplay
+  fits each viewport. Screenshots: `*-full-height.png` in the temporary review
+  folder. Physical device/browser safe-area verification is still pending.
+- Astro check/build, Chromium/WebKit rotation/entry checks, and the updated
+  15-viewport layout checks passed. Fixed a test selector ambiguity when a
+  randomly focused board digit matched a keypad button's data attribute.
+  Diff whitespace check passed. Changes remain local and undeployed.
+- Next checkpoint: owner judges the full-height/right-panel composition before
+  the paper typography pass.
+
+### Corrected centered composition and edge-to-edge board
+
+- Owner rejected the all-right control interpretation: the board must be centered,
+  non-number controls on the left, and the transposed number keypad on the right.
+  Owner also requested a gear instead of the ellipsis and reported bottom spacing.
+- Landscape now uses equal-width side regions around the board. Removed vertical
+  safe-area deductions and all outer padding from the board layout; safe-area
+  spacing applies to the side controls only. Replaced the circular game-menu
+  ellipsis with an inline SVG gear, preserving access to the existing game menu.
+- Updated SPEC.md and existing layout tests to protect horizontal centering,
+  top/bottom viewport contact, control placement, and touch targets. Added an
+  explicit simulated 21px bottom / 44px side inset check: at 844×390 the centered
+  board remains 390px square, from y=0 to y=390.
+- Astro check/build passed. All six targeted settings, layout, and rotation checks
+  passed across Chromium/WebKit after correcting a padded-container test assertion.
+  Reviewed phone (844×390 and 568×320), simulated-inset phone, and iPad (1024×768)
+  screenshots; captured desktop 1440×900 as well. Images use `*-centered.png` and
+  `phone-centered-insets.png` in the temporary review folder.
+- Physical device rendering still needs owner review; simulated inset coverage
+  is not a physical Safari/PWA check. Changes remain local and undeployed.
+- Next checkpoint: review this corrected composition before typography work.
+
+### Bottom-left tool square and small board inset
+
+- Owner requested matching controls in a bottom-left 2×2 block: Settings / Notes,
+  then Undo / Erase. Left column should stay around wordmark width, keypad gets
+  slightly more room, and board shifts a little left. Owner explicitly approved
+  a tiny top/bottom board margin to explore intermittent first-row focusing.
+- Grouped the existing menu button with the three tools. Landscape shows four
+  matching square surface buttons with consistent inline SVG icons and a Settings
+  label; the same menu button is positioned in the portrait header. Its existing
+  game-menu actions remain accessible. The block respects bottom/left safe areas.
+- Landscape CSS Grid now uses intrinsic left-column sizing, a flexible middle,
+  and a wider right keypad. The board takes the largest square fitting that middle
+  area, capped at viewport height minus 8px (4px at each edge). Width-limited
+  windows can have larger vertical margins. Updated SPEC.md accordingly.
+- Verified all nine first-row cells accept clicks 2px inside their top edges in
+  Chromium/WebKit. This did not reproduce the owner's intermittent physical touch
+  issue; native browser/OS edge gestures still require phone testing.
+- Astro check/build passed. Ten targeted browser checks passed across the work:
+  settings, notes/undo/persistence, keyboard/reduced motion, rotation/entry plus
+  first-row targeting, and responsive layout. Corrected the compact-width sizing
+  and allowed a few pixels of intrinsic Settings-label width in layout assertions.
+  The final two 15-viewport layout checks passed, including simulated safe insets.
+- Reviewed phone 844×390, small phone 568×320, iPad 1024×768, and portrait 390×664;
+  also captured desktop 1440×900. Screenshots are `*-tool-square.png` in the
+  temporary review folder. At 844×390, the board is 382px square starting at y=4.
+- Changes remain local and undeployed. Next checkpoint: owner judges the tool
+  block, slight leftward balance, and whether the small inset helps on the phone.
+
+### Outlined tools, filled highlights, landscape lobby, and scroll reset
+
+- Owner said the inset did not help and requested its removal, a stronger/outlined
+  tool treatment, quieter selected/matching cells, and a landscape lobby.
+  Owner explicitly chose the two-column lobby: Difficulty/custom and Play left,
+  Mode and Puzzle source right, below the existing header.
+- Removed the 4px board inset. Landscape tool buttons now use a 1px outline,
+  transparent background, and theme-aware ink text/icons; Notes keeps its active
+  accent state. Removed inset borders from both selected and matching cells,
+  keeping filled highlights and a dark, visible keyboard-focus outline.
+- Landscape lobby uses a capped 760px two-column form with compact existing
+  spacing. Standard and custom forms fit at 568×320 and larger tested sizes.
+  No new lobby copy or controls were introduced.
+- Independently reproduced scroll carry-over: both Chromium and WebKit retained
+  66px after starting a game from a scrolled lobby; Chromium retained 166px on
+  game reload. Set manual history scroll restoration and reset to the top on
+  page show and lobby/game entry. Regular scrolling remains available.
+  Regression coverage includes reload, Play, New game, and browser back/forward.
+- Verification: all 13 core tests, Astro check/build, link/structure checks,
+  and all 48 browser tests passed (four existing WebKit service-worker skips).
+  Updated layout/matching checks and added meaningful lobby-fit and scroll tests.
+  Diff whitespace check passed; existing build chunk-size warning remains.
+- Reviewed phone gameplay, two-column lobby, smallest-phone custom lobby,
+  desktop lobby, and dark Clay/active Notes screenshots. Captured gameplay and
+  lobby at 844×390, 568×320, 1024×768, and 1440×900. Images use `*-outline*.png`
+  in the existing temporary review folder.
+- Changes remain local and undeployed. Next checkpoint: owner reviews the
+  outlined tools, fill-only highlights, landscape lobby, and physical startup
+  scrolling before further typography work.
+
+### Larger label-free icons, centered lobby, and dialog spacing
+
+- Owner requested swapping Play and Puzzle source in landscape, larger icons
+  without labels, larger lobby labels/info icon, balanced Done spacing, and a
+  vertically centered lobby.
+- Landscape now pairs Difficulty/custom and Puzzle source on the left, Mode and
+  Play on the right. Centered the lobby vertically whenever it fits; short pages
+  still grow and scroll. Compact custom-form gaps/range margins and short-screen
+  header spacing keep the 568×320 custom form within the viewport.
+- Play-page tool SVGs are now 32px (previously 22px) with no visible labels.
+  All buttons retain accessible names. Lobby labels are 16px and the info glyph
+  is 28px. Done uses 12px horizontal / 8px vertical padding and a 44px minimum
+  height, consistently across dialogs.
+- Found that mode info directly called showModal(), which initially focused Done
+  and drew its prominent focus box. It now uses the shared dialog opener, focusing
+  the heading like other dialogs. Keyboard outlines and focus return remain intact.
+- Verification: Astro check/build and link checks passed. All 16 targeted
+  Chromium/WebKit checks passed for lobby layout/centering, settings, mode info,
+  scroll reset, gameplay tools, rotation, and first-row targeting. After the
+  mode-info focus adjustment, all four affected dialog/focus checks passed again.
+  Reviewed 844×390 and 568×320 landscape, 390×664 portrait, and dialog screenshots;
+  captured 1440×900 desktop lobby too.
+- Current screenshots in the temporary review folder:
+  `phone-large-icons.png`, `portrait-large-icons.png`,
+  `phone-centered-lobby.png`, `small-centered-lobby-custom.png`,
+  `portrait-centered-lobby.png`, and `phone-centered-lobby-info.png`.
+- Changes remain local and undeployed. Next checkpoint: owner judges icon size,
+  centered lobby, and revised dialog spacing before further visual changes.
+
+### Approved release and loss default
+
+- Owner approved the visual changes and requested commit, push, and deployment.
+- New Puzzle is now first and keyboard-focused after reaching the strike limit,
+  including when restoring a lost game. Enter opens the lobby; the lost save is
+  preserved until Play starts another puzzle.
+- Release checks passed: Astro check/build, all 13 core tests, all 50 browser
+  tests (four existing WebKit service-worker skips), local-link checks, and diff
+  whitespace checks.
+- Deployment verification is recorded in `docs/GO-LIVE.md`. The owner-supplied
+  `astro-plain-css-ui-polish-guide.md` remains an untracked local reference.

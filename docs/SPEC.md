@@ -13,7 +13,8 @@ controls and whitespace. No promotional copy, redundant status text, or decorati
 badges. Mode explanations live behind the existing info control; other explanations
 belong on About/Help.
 
-- `/` is the lobby: GridZero, About link, existing puzzle controls, and Play.
+- `/` is the lobby: GridZero, Settings and About, existing puzzle controls, and Play.
+  Settings opens the same preferences dialog without starting a puzzle.
 - Controls: difficulty, custom empty count when applicable, mode with info button,
   and source. Defaults: Medium / Challenge / Collection / 45 custom empty cells.
 - Visiting the lobby does not start or replace a puzzle. Play installs a puzzle
@@ -25,7 +26,7 @@ belong on About/Help.
   ties, and enter number focus rather than selecting an input cell. Restoring or
   restarting a board also initializes number focus from its current counts.
 - Tapping a filled cell focuses its digit: all matching cells receive the same
-  border/background, without a uniquely selected cell or peer shading. Tapping
+  background, without per-match borders, a uniquely selected cell, or peer shading. Tapping
   an empty cell switches to cell focus. Accepted entries switch to number focus.
   Respect the existing matching-highlight preference.
 - Completion offers **New game** (lobby) and **Admire puzzle** (dismiss and retain
@@ -45,8 +46,9 @@ belong on About/Help.
 - Challenge rejects wrong entries and adds strikes; default limit 3, configurable
   1–5 for future games. Saved games retain their original limits, including legacy
   unlimited/10. Undo never removes strikes; notes are not solution-checked.
-- At the strike limit, lock entry/history and offer Retry This Puzzle, Continue
-  in Classic, and New Puzzle. Retry resets the same puzzle. Continue preserves
+- At the strike limit, lock entry/history and offer New Puzzle as the primary,
+  keyboard-focused default, followed by Retry This Puzzle and Continue in Classic.
+  Retry resets the same puzzle. Continue preserves
   progress and strikes. Restart requires confirmation.
 - Classic accepts hypotheses without correctness feedback. Check Board explicitly
   marks wrong filled cells. Only a full valid board completes.
@@ -66,21 +68,44 @@ belong on About/Help.
 
 ## Layout, preferences, and accessibility
 
-- The square board is always 100% of the page width, in browsers and installed
-  PWAs, at every viewport size. No height-based shrinking or tablet/desktop caps.
-  Tools and keypad follow below; allow vertical scrolling when needed.
-  Keypad remains capped at 480 CSS pixels. No empty status-row budget.
-- Keypad: 1 3 5 7 9 above centered, staggered 2 4 6 8.
-- Primary tools below the number keypad: Undo, Erase, Notes. Menu: New game, Settings, Classic-only Check
+- In portrait, the square board fills the page width. Tools and keypad follow
+  below; the keypad remains capped at 480 CSS pixels.
+- In landscape, fit the board between a wordmark-width non-number column on the
+  left and a slightly wider keypad on the right, shifting the board slightly left
+  of exact center. Maximize its square size with no top/bottom inset; apply
+  safe-area spacing only to controls. In nearly square windows, use the
+  maximum width between usable side controls. Allow scrolling for short viewports,
+  enlarged text, or status messages rather than clipping controls.
+- Keypad: portrait has 1 3 5 7 9 above centered, staggered 2 4 6 8;
+  landscape transposes this into two adjacent staggered columns on the far right,
+  odd digits followed by even digits, respecting safe areas.
+  No empty status-row budget.
+- Portrait tools below the keypad: Undo, Erase, Notes; game menu in the header.
+  Landscape has a matching 2×2 control block at bottom left: Settings (game menu)
+  top left, Notes top right, Undo bottom left, Erase bottom right.
+  Menu: New game, Settings, Classic-only Check
   Board, opt-in Fill Notes, Redo, Restart.
+- The landscape tool block uses outlined buttons, paper showing through, and
+  ink-colored icons/text. Active Notes remains distinct. Cell selection/matching
+  uses filled highlights; keyboard focus retains a visible outline.
+- The game-menu control uses a gear, circular in portrait and matching the other
+  square tool buttons in landscape. All four controls use larger, label-free
+  icons with accessible names.
 - Show difficulty, mode, Challenge strikes, and optional timer. Small limits use Xs.
 - Ink/Moss/Clay themes; System appearance by default. Scheduled defaults 07:00/19:00
   using the local clock. Timer hidden, haptics on where supported, peer/matching
   highlights on; notes, Fill Notes, and cleanup off by default.
-- Lobby styling uses a narrow centered column, stacked labels, full-width 56px
-  controls, consistent spacing, and the existing theme palette. No added content.
+- Lobby styling uses a narrow column, vertically and horizontally centered when
+  content fits, with scrolling for shorter screens. Labels are 16px, the mode info
+  glyph is enlarged, and controls remain full-width and 56px high. Use consistent
+  spacing and the existing theme palette. No added content.
+- Landscape lobby uses two columns beneath the existing header: difficulty/custom
+  and Puzzle source on the left, Mode and Play on the right.
+- Entering either app page, including reload and browser back/forward, starts at
+  the top. Normal scrolling remains available for content exceeding the viewport.
 - Game menu/settings use the same restrained surface controls, spacing, and
   typography, without decorative menu glyphs, blurred backdrops, or added copy.
+  Dialog Done controls have symmetrical padding and at least 44px height.
 - Cells expose row, column, value/clue, notes, selection, and explicit errors.
   Dialogs manage focus. Keyboard: arrows, 1–9, N, Backspace/Delete,
   Cmd/Ctrl+Z, Shift for redo.

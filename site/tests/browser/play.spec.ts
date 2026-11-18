@@ -47,6 +47,8 @@ test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks
     await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
   }
   await expect(page.locator('#notice-title')).toHaveText('Strike limit reached');
+  await expect(page.locator('#notice-actions button').first()).toHaveText('New Puzzle');
+  await expect(page.locator('#notice-actions button').first()).toBeFocused();
   expect((await saved(page)).strikes).toBe(3); expect((await saved(page)).board.values[2]).toBe(0);
   await page.reload(); await expect(page.locator('#notice-dialog')).toBeVisible();
   await page.locator('#notice-dialog').getByRole('button', { name: 'Continue in Classic', exact: true }).click();
@@ -54,6 +56,17 @@ test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks
   await page.getByRole('button', { name: 'Enter 1', exact: true }).click();
   await expect(page.locator('[data-cell="2"] .value')).toHaveText('1');
   await menu(page, 'check'); await expect(page.locator('#notice-title')).toHaveText('A second look');
+});
+test('New Puzzle is the keyboard default after a loss and preserves the lost game until Play', async ({ page }) => {
+  const game = fixture();
+  game.strikes = game.strikeLimit;
+  await load(page, game);
+  await expect(page.locator('#notice-actions button').first()).toHaveText('New Puzzle');
+  await expect(page.locator('#notice-actions button').first()).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('#new-form')).toBeVisible();
+  expect(await saved(page)).toEqual(game);
 });
 test('settings persist, themes apply, assistance is opt-in, strike rules stay fixed', async ({ page }) => {
   await load(page); await menu(page, 'settings');
@@ -78,6 +91,66 @@ test('settings persist, themes apply, assistance is opt-in, strike rules stay fi
   await menu(page, 'settings');
   await expect(page.getByLabel('Challenge strike limit', { exact: true })).toHaveValue('2');
 });
+test('lobby Settings preserves puzzle choices, restores focus, and saves appearance without starting a game', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#new-form [name="difficulty"]').selectOption('custom');
+  await page.locator('#new-form [name="empty"]').fill('32');
+  await page.locator('#lobby-settings').click();
+  await expect(page.locator('#settings-title')).toBeFocused();
+  await page.locator('[data-theme-choice="clay"]').click();
+  await page.getByLabel('Appearance', { exact: true }).selectOption('dark');
+  await page.locator('#settings-dialog [data-close]').click();
+  await expect(page.locator('#lobby-settings')).toBeFocused();
+  await expect(page.locator('#new-form [name="difficulty"]')).toHaveValue('custom');
+  await expect(page.locator('#new-form [name="empty"]')).toHaveValue('32');
+  expect(await page.evaluate(() => localStorage.getItem('gridzero.web.game.v1'))).toBeNull();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'clay');
+  await expect(page.locator('html')).toHaveAttribute('data-scheme', 'dark');
+  await page.locator('#lobby-settings').click();
+  await page.getByRole('combobox', { name: 'Default puzzle source', exact: true }).selectOption('generated');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#lobby-settings')).toBeFocused();
+  await expect(page.locator('#new-form [name="source"]')).toHaveValue('generated');
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error('storage disabled'); }; });
+  await page.locator('#lobby-settings').click();
+  await page.locator('[data-theme-choice="moss"]').click();
+  await page.locator('#settings-dialog [data-close]').click();
+  await expect(page.locator('#lobby-error')).toContainText("Couldn't save your settings");
+});
+test('landscape lobby fits standard and custom setup into two columns', async ({ page }) => {
+  await page.goto('/');
+  for (const [width, height] of [[568, 320], [844, 390], [1024, 768], [1440, 900]]) {
+    await page.setViewportSize({ width, height });
+    for (const difficulty of ['medium', 'custom']) {
+      await page.locator('#new-form [name="difficulty"]').selectOption(difficulty);
+      const puzzle = (await page.locator('#new-form fieldset').first().boundingBox())!;
+      const options = (await page.locator('#new-form .mode-row').boundingBox())!;
+      const source = (await page.locator('#new-form label:has(select[name="source"])').boundingBox())!;
+      const play = (await page.locator('#start-puzzle').boundingBox())!;
+      expect(puzzle.x + puzzle.width).toBeLessThan(options.x);
+      expect(play.x).toBe(options.x);
+      expect(source.x).toBe(puzzle.x);
+      expect(play.y).toBeGreaterThanOrEqual(options.y + options.height);
+      expect(source.y).toBeGreaterThanOrEqual(puzzle.y + puzzle.height);
+      for (const box of [puzzle, options, source, play]) {
+        expect(box.y).toBeGreaterThanOrEqual(0);
+        expect(box.y + box.height).toBeLessThanOrEqual(height);
+        expect(box.x + box.width).toBeLessThanOrEqual(width);
+      }
+      const header = (await page.locator('.lobby .dialog-header').boundingBox())!;
+      expect(header.y).toBeCloseTo(height - Math.max(source.y + source.height, play.y + play.height), 0);
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(height);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+    }
+  }
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.locator('#new-form [name="empty"]').fill('20');
+  await page.locator('#start-puzzle').click();
+  await expect(page).toHaveURL(/\/play\/$/);
+  expect((await saved(page)).puzzle.givens.filter(value => !value)).toHaveLength(20);
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+});
 test('custom generation runs in worker and cancellation keeps old game', async ({ page }) => {
   await load(page); await menu(page, 'new');
   await page.locator('#new-form [name="difficulty"]').selectOption('custom');
@@ -99,6 +172,7 @@ test('mode info preserves pending puzzle choices and returns keyboard focus', as
   await page.locator('#new-form [name="difficulty"]').selectOption('custom');
   await page.locator('#new-form [name="empty"]').fill('32');
   await page.getByRole('button', { name: 'About game mode' }).click();
+  await expect(page.locator('#mode-info-title')).toBeFocused();
   await expect(page.locator('#mode-info-message')).toContainText('5 strikes end the attempt.');
   await page.locator('#mode-info-dialog [data-close]').click();
   await expect(page.locator('#mode-info')).toBeFocused();
@@ -234,13 +308,15 @@ test('filled-cell taps focus all matching digits equally and number entry is a n
   }));
   expect(borders.length).toBeGreaterThan(1);
   expect(new Set(borders.map(style => JSON.stringify(style))).size).toBe(1);
-  expect(borders[0][0]).not.toBe('none');
+  expect(borders[0][0]).toBe('none');
+  expect(borders[0][1]).not.toBe(await page.locator('.cell:not(.matching)').first().evaluate(element => getComputedStyle(element).backgroundColor));
   await page.keyboard.press('1');
   expect((await saved(page)).strikes).toBe(0);
   await page.locator('[data-cell="2"]').click();
   await expect(page.locator('#board')).toHaveAttribute('data-focus', 'cell');
   await expect(page.locator('.cell.selected')).toHaveCount(1);
   await expect(page.locator('.cell.matching')).toHaveCount(0);
+  expect(await page.locator('.cell.selected').evaluate(element => getComputedStyle(element).boxShadow)).toBe('none');
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
   await expect(page.locator('#board')).toHaveAttribute('data-digit', '4');
   await page.keyboard.press('1');
@@ -268,25 +344,145 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
 });
-test('fresh Play always fills the page width, including short browser windows', async ({ page }) => {
+test('portrait fills the width; landscape fits a tall board beside compact bottom-left tools', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [844, 390], [1024, 768], [768, 1024], [1440, 900], [600, 500], [280, 480]]) {
+  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [568, 320], [780, 339], [844, 390], [1024, 768], [768, 1024], [1366, 1024], [1440, 900], [600, 500], [280, 480]]) {
     await page.setViewportSize({ width, height });
-    const boxes = await page.locator('#board, .keypad, .tools').evaluateAll(elements => elements.map(e => {
+    await page.evaluate(() => scrollTo(0, 0));
+    const boxes = await page.locator('#board, .key-row, .tools').evaluateAll(elements => elements.map(e => {
       const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
     }));
     const pageWidth = await page.evaluate(() => document.documentElement.clientWidth);
     for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(pageWidth + 1); }
     expect(Math.abs(boxes[0].width - boxes[0].height)).toBeLessThan(1);
-    expect(boxes[0].x).toBe(0);
-    expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(pageWidth);
-    expect(boxes[1].y).toBeGreaterThanOrEqual(boxes[0].bottom);
+    if (width > height) {
+      for (const box of boxes) expect(box.bottom, `visible at ${width}×${height}`).toBeLessThanOrEqual(height + 1);
+      for (const box of boxes.slice(1, 3)) expect(box.x).toBeGreaterThan(boxes[0].right);
+      expect(boxes[3].right).toBeLessThan(boxes[0].x);
+      expect(boxes[0].x + boxes[0].width/2).toBeLessThan(width/2);
+      const wordmark = (await page.locator('#main .game-wordmark').boundingBox())!;
+      const keypad = (await page.locator('.keypad').boundingBox())!;
+      const leftEdge = Math.max(wordmark.x + wordmark.width, boxes[3].right) + 8;
+      expect(boxes[0].width).toBeCloseTo(Math.min(height, keypad.x - leftEdge), 0);
+      expect(boxes[0].y).toBeGreaterThanOrEqual(0);
+      expect(boxes[0].bottom).toBeLessThanOrEqual(height);
+      // The short Settings label may make the block a few pixels wider than
+      // the wordmark, but the left column must not expand into a broad rail.
+      expect(boxes[3].width).toBeLessThanOrEqual(wordmark.width + 10);
+      expect(boxes[3].bottom).toBeCloseTo(height - 8, 0);
+      expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(height + 1);
+      const firstOdd = (await page.locator('button[data-digit="1"]').boundingBox())!;
+      const secondOdd = (await page.locator('button[data-digit="3"]').boundingBox())!;
+      const firstEven = (await page.locator('button[data-digit="2"]').boundingBox())!;
+      expect(firstEven.x).toBeCloseTo(firstOdd.x + firstOdd.width + 10, 0);
+      expect(firstEven.y).toBeCloseTo((firstOdd.y + secondOdd.y)/2, 0);
+      expect(firstEven.x + firstEven.width).toBeCloseTo(pageWidth - 8, 0);
+      expect(boxes[3].right).toBeLessThanOrEqual(firstOdd.x);
+      for (const selector of ['.game-wordmark', '#difficulty', '.game-metrics']) {
+        const box = (await page.locator(`#main ${selector}`).boundingBox())!;
+        expect(box.x).toBeGreaterThanOrEqual(8);
+        expect(box.x + box.width).toBeLessThanOrEqual(boxes[0].x);
+        expect(box.y + box.height).toBeLessThanOrEqual(boxes[3].y);
+      }
+      const [settings, notes, undo, erase] = await Promise.all(
+        ['#menu-open', '#notes', '#undo', '#erase'].map(selector => page.locator(selector).boundingBox())
+      );
+      expect(settings!.y).toBe(notes!.y);
+      expect(undo!.y).toBe(erase!.y);
+      expect(settings!.x).toBe(undo!.x);
+      expect(notes!.x).toBe(erase!.x);
+      expect(settings!.x + settings!.width).toBeLessThan(notes!.x);
+      expect(settings!.y + settings!.height).toBeLessThan(undo!.y);
+      for (const button of [settings!, notes!, undo!, erase!]) {
+        expect(button.width).toBeGreaterThanOrEqual(44);
+        expect(button.height).toBeGreaterThanOrEqual(44);
+      }
+      for (const key of await page.locator('button[data-digit]').all()) {
+        const box = (await key.boundingBox())!;
+        expect(box.width).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+    } else {
+      expect(boxes[0].x).toBe(0);
+      expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(pageWidth);
+      expect(boxes[1].y).toBeGreaterThanOrEqual(boxes[0].bottom);
+      expect(boxes[3].y).toBeGreaterThanOrEqual(boxes[2].bottom);
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(overflow, `${width}×${height}`).toBe(false);
   }
+  // Safe-area insets protect controls without adding a margin to the board.
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.locator('#main').evaluate(element => {
+    element.style.setProperty('--safe-bottom', '21px');
+    element.style.setProperty('--safe-left', '44px');
+    element.style.setProperty('--safe-right', '44px');
+  });
+  const insetBoard = (await page.locator('#board').boundingBox())!;
+  expect(insetBoard.y).toBe(0);
+  expect(insetBoard.height).toBe(390);
+  expect(insetBoard.x + insetBoard.width/2).toBeLessThan(422);
+  const insetTools = (await page.locator('.tools').boundingBox())!;
+  expect(insetTools.y + insetTools.height).toBe(390 - 21 - 8);
+  const insetKey = (await page.locator('button[data-digit="8"]').boundingBox())!;
+  expect(insetKey.y + insetKey.height).toBeLessThanOrEqual(390 - 21 - 8);
+  expect(insetKey.x + insetKey.width).toBeLessThanOrEqual(844 - 44 - 8);
+  await page.locator('#main').evaluate(element => element.removeAttribute('style'));
+  await page.setViewportSize({ width: 280, height: 480 });
   await page.locator('#status').evaluate(element => { element.textContent = 'Incorrect number'; });
   expect((await page.locator('#board').boundingBox())!.width).toBe(await page.evaluate(() => document.documentElement.clientWidth));
+});
+test('entering the lobby or game resets scroll while normal scrolling remains available', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 700 });
+  await load(page);
+  await page.evaluate(() => scrollTo(0, 200));
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+  await page.reload();
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await page.evaluate(() => scrollTo(0, 200));
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+  await page.setViewportSize({ width: 280, height: 480 });
+  await page.goto('/');
+  await page.locator('#start-puzzle').click();
+  await expect(page).toHaveURL(/\/play\/$/);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await menu(page, 'new');
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await page.evaluate(() => scrollTo(0, 200));
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/play\/$/);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/$/);
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+});
+test('side keypads support entries and rotation settles an in-flight move', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await load(page);
+  // Probe near the top edge of every first-row cell, not just its center.
+  for (let index = 0; index < 9; index++) {
+    const cell = page.locator(`[data-cell="${index}"]`);
+    const box = (await cell.boundingBox())!;
+    await cell.click({ position: { x: box.width/2, y: 2 } });
+    await expect(cell).toHaveAttribute('aria-pressed', 'true');
+  }
+  await page.locator('[data-cell="2"]').click();
+  await page.locator('[data-digit="4"]').click();
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'travelling');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  await expect(page.locator('.entry-flight, .cell.flying')).toHaveCount(0);
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.locator('[data-cell="6"]').click();
+  await page.locator('[data-digit="9"]').click();
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  await expect(page.locator('[data-cell="6"] .value')).toHaveText('9');
+  expect((await saved(page)).strikes).toBe(0);
+  await menu(page, 'settings');
+  await expect(page.locator('#settings-dialog')).toBeVisible();
 });
 
 test('lobby defaults Medium and remembers only successfully started choices', async ({ page }) => {

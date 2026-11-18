@@ -22,7 +22,6 @@ const lobby = Astro.url.pathname === '/';
     <main id="main" class="game-app" aria-label="GridZero Sudoku" hidden={lobby}>
       <header class="game-header">
         <a href="/" class="game-wordmark">GridZero</a>
-        <button id="menu-open" class="round-button" aria-label="Game menu" aria-haspopup="dialog">•••</button>
       </header>
       <div class="metadata">
         <div><strong id="difficulty">Medium</strong><span id="mode">Challenge</span></div>
@@ -31,14 +30,26 @@ const lobby = Astro.url.pathname === '/';
       <div id="board" class="board" role="group" aria-label="Sudoku board. Use arrow keys to select cells and number keys to enter.">
         {Array.from({ length: 81 }, (_, i) => <button class:list={['cell', { 'box-right': i % 9 === 2 || i % 9 === 5, 'box-bottom': Math.floor(i / 9) === 2 || Math.floor(i / 9) === 5 }]} data-cell={i} tabindex={i === 0 ? 0 : -1} aria-label={`Row ${Math.floor(i / 9) + 1}, column ${i % 9 + 1}, empty`}><span class="value"></span><span class="notes" aria-hidden="true">{Array.from({ length: 9 }, (_, d) => <span data-note={d + 1}></span>)}</span></button>)}
       </div>
-      <div class="keypad" aria-label="Number keypad">
+      <div class="keypad" role="group" aria-label="Number keypad">
         <div class="key-row">{[1, 3, 5, 7, 9].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
         <div class="key-row even">{[2, 4, 6, 8].map(d => <button data-digit={d} aria-label={`Enter ${d}`}>{d}</button>)}</div>
       </div>
       <div class="tools" aria-label="Board tools">
-        <button id="undo" disabled><span aria-hidden="true">↶</span>Undo</button>
-        <button id="erase" disabled><span aria-hidden="true">⌫</span>Erase</button>
-        <button id="notes" aria-pressed="false"><span aria-hidden="true">✎</span>Notes</button>
+        <button id="menu-open" class="round-button" aria-label="Game menu" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 1h4v3l2 1 2-2 3 3-2 2 1 2h3v4h-3l-1 2 2 2-3 3-2-2-2 1v3h-4v-3l-2-1-2 2-3-3 2-2-1-2H1v-4h3l1-2-2-2 3-3 2 2 2-1z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+        <button id="undo" aria-label="Undo" disabled>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5-6 6 6 6M3 11h11a6 6 0 0 1 6 6v2" /></svg>
+        </button>
+        <button id="erase" aria-label="Erase" disabled>
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5a2 2 0 0 1 0 3L11 21H7l-5-5a2 2 0 0 1 0-3L13 3a2 2 0 0 1 3 0ZM8 7l9 9M11 21h11" /></svg>
+        </button>
+        <button id="notes" aria-label="Notes" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 5 5M4 20l4-1L21 6a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg>
+        </button>
       </div>
       <div class="game-status"><p id="status" role="status" aria-live="polite">Preparing your puzzle…</p><p id="save-status" role="status"></p></div>
     </main>
@@ -56,7 +67,13 @@ const lobby = Astro.url.pathname === '/';
       <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/">Home</a></nav>
     </dialog>
     <main id="new-dialog" class="lobby" hidden={!lobby} aria-label="New game">
-      <header class="dialog-header"><a class="game-wordmark" href="/">GridZero</a><a href="/about/">About</a></header>
+      <header class="dialog-header">
+        <a class="game-wordmark" href="/">GridZero</a>
+        <nav class="lobby-links">
+          <button id="lobby-settings" type="button" aria-haspopup="dialog">Settings</button>
+          <a href="/about/">About</a>
+        </nav>
+      </header>
       <form id="new-form">
         <fieldset aria-label="Puzzle">
           <label>Difficulty<select name="difficulty">{levels.map(l => <option value={l}>{l[0].toUpperCase() + l.slice(1)}</option>)}</select></label>

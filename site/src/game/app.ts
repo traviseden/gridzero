@@ -13,6 +13,10 @@ const newForm = $<HTMLFormElement>('#new-form'), settingsForm = $<HTMLFormElemen
 const formField = (form: HTMLFormElement, name: string) => form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
 const SAVE = 'gridzero.web.game.v1', PREFS = 'gridzero.web.preferences.v1';
 const systemScheme = matchMedia('(prefers-color-scheme: dark)'), reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+// Lobby and game share one document; their scroll positions are not interchangeable.
+history.scrollRestoration = 'manual';
+const resetScroll = () => window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+window.addEventListener('pageshow', resetScroll);
 let preferences = { ...defaults }, game: Game | undefined, played: string[] = [], selected = -1, cursor = 0, focusedDigit = 0, pencil = false;
 let checked = new Set<number>(), errorCell = -1, feedbackToken = 0, worker: Worker | undefined;
 let lastTick: number | undefined, saveError = '', prefError = '', restoreError = '', generating = false;
@@ -27,11 +31,13 @@ function save() {
   try { localStorage.setItem(SAVE, JSON.stringify({ version: 1, game, played })); saveError = ''; }
   catch { saveError = "Couldn't save your progress. Keep this tab open; browser storage may be full or disabled."; }
   $('#save-status').textContent = saveError || prefError || restoreError;
+  $('#lobby-error').textContent = saveError || prefError || restoreError;
 }
 function savePreferences() {
   try { localStorage.setItem(PREFS, JSON.stringify(preferences)); prefError = ''; }
   catch { prefError = "Couldn't save your settings. Browser storage may be disabled."; }
   $('#save-status').textContent = saveError || prefError || restoreError;
+  $('#lobby-error').textContent = saveError || prefError || restoreError;
 }
 function appearance() {
   const dark = darkAppearance(preferences, systemScheme.matches);
@@ -139,11 +145,14 @@ function notice(heading: string, message: string, actions: { label: string; run?
 }
 function outcome() {
   if (!game) return;
-  if (isOut(game)) notice('Strike limit reached', `${game.strikeLimit} strikes.`, [
-    { label: 'Retry This Puzzle', run: restart },
-    { label: 'Continue in Classic', run: () => { if (game) game.mode = 'classic'; checked.clear(); render(); save(); } },
-    { label: 'New Puzzle', run: openNew },
-  ]);
+  if (isOut(game)) {
+    notice('Strike limit reached', `${game.strikeLimit} strikes.`, [
+      { label: 'New Puzzle', run: openNew },
+      { label: 'Retry This Puzzle', run: restart },
+      { label: 'Continue in Classic', run: () => { if (game) game.mode = 'classic'; checked.clear(); render(); save(); } },
+    ]);
+    $('#notice-actions button').focus({ preventScroll: true });
+  }
   else if (game.finished) notice('', '', [
     { label: 'New game', run: openNew }, { label: 'Admire puzzle' },
   ]);
@@ -236,11 +245,13 @@ function openNew() {
   $('#main').hidden = true; newDialog.hidden = false;
   $('#lobby-error').textContent = saveError || prefError || restoreError;
   if (location.pathname !== '/') history.pushState(null, '', '/');
+  resetScroll();
 }
 function showGame() {
   newDialog.hidden = true; $('#main').hidden = false;
   if (location.pathname !== '/play/') history.pushState(null, '', '/play/');
   cells[cursor].focus({ preventScroll: true });
+  resetScroll();
 }
 function updateNew() {
   const custom = formField(newForm, 'difficulty').value === 'custom';
@@ -254,13 +265,14 @@ $('#mode-info').addEventListener('click', () => {
     `Wrong entries are rejected and add a strike. ${preferences.strikeLimit ? `${preferences.strikeLimit} strikes end the attempt.` : 'No strike limit.'} Undo does not remove strikes. Notes are not checked.` :
     'Enter numbers without automatic checking or strikes. Use Check Board in the game menu to check your entries.';
   // Keep the chooser open underneath so its unsaved selections and focus survive.
-  $<HTMLDialogElement>('#mode-info-dialog').showModal();
+  openDialog($<HTMLDialogElement>('#mode-info-dialog'));
 });
 $<HTMLDialogElement>('#mode-info-dialog').addEventListener('close', () => {
   if (!newDialog.hidden) $('#mode-info').focus();
 });
 function setGenerating(value: boolean) {
   generating = value;
+  $<HTMLButtonElement>('#lobby-settings').disabled = value;
   for (const field of newForm.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement>('input, select, button')) field.disabled = value;
   $('#start-puzzle').textContent = value ? 'Preparing…' : 'Play';
   $('#cancel-generation').hidden = !value;
@@ -326,6 +338,10 @@ settingsForm.addEventListener('change', event => {
     Math.max(1, Math.min(5, Math.round(Number(field.value)))) : preferences.strikeLimit;
   if (field instanceof HTMLInputElement && field.type === 'time') { if (!field.value) return; const [h, m] = field.value.split(':').map(Number); value = h * 60 + m; }
   preferences = restorePreferences({ ...preferences, [field.name]: value });
+  if (field.name === 'source' && !newDialog.hidden) {
+    formField(newForm, 'source').value = preferences.source;
+    updateNew();
+  }
   updateSettings(); savePreferences(); render();
 });
 document.querySelectorAll<HTMLElement>('[data-theme-choice]').forEach(b => b.addEventListener('click', () => {
@@ -343,6 +359,10 @@ $('#undo').addEventListener('click', () => changed(() => { if (game) undo(game);
 $('#erase').addEventListener('click', () => changed(() => { if (game) erase(game, selected); }));
 $('#notes').addEventListener('click', () => { if (transition.phase !== 'idle') return; pencil = !pencil; haptic(); render(); });
 $('#menu-open').addEventListener('click', () => { clearFlights(); render(); openDialog($<HTMLDialogElement>('#menu-dialog')); });
+$('#lobby-settings').addEventListener('click', openSettings);
+settingsDialog.addEventListener('close', () => {
+  if (!newDialog.hidden) $('#lobby-settings').focus({ preventScroll: true });
+});
 document.querySelectorAll<HTMLElement>('[data-action]').forEach(button => button.addEventListener('click', () => {
   $<HTMLDialogElement>('#menu-dialog').close();
   if (button.dataset.action === 'new') { openNew(); return; }
