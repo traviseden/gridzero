@@ -368,3 +368,21 @@ the owner's design decision.
   whitespace checks.
 - Deployment verification is recorded in `docs/GO-LIVE.md`. The owner-supplied
   `astro-plain-css-ui-polish-guide.md` remains an untracked local reference.
+
+### Desktop sizing correction
+
+- Owner reported oversized desktop boards after deployment. Reproduced a 900px
+  board at 900×1100 with the keypad below the viewport, and 900px+ boards in
+  wide desktop windows. Earlier checks incorrectly required maximum sizing on
+  desktops and omitted tall desktop cases.
+- Owner explicitly chose a 540px cap and centered side-control layout for windows
+  at least 800px wide and 600px tall, regardless of orientation. Reused the
+  approved side controls, kept them close to the board, and retained phone sizing.
+- Board is 540px at 900×1100 and 1440×900, and 454px at 800×600.
+  Expanded responsive checks to tall, square, short, and ultrawide desktops;
+  verify the cap, centering, adjacent controls, visibility, and phone dimensions.
+- Astro check/build, 13 core tests, 50 browser tests (four existing skips),
+  link checks, and whitespace checks passed. Reviewed tall/small desktop images;
+  screenshots are `desktop-*-capped.png` in the existing temporary review folder.
+- Next checkpoint: owner checks the corrected desktop layout at their actual
+  window size. Deployment details follow in `docs/GO-LIVE.md`.

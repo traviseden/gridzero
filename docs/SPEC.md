@@ -68,7 +68,7 @@ belong on About/Help.
 
 ## Layout, preferences, and accessibility
 
-- In portrait, the square board fills the page width. Tools and keypad follow
+- On portrait phones, the square board fills the page width. Tools and keypad follow
   below; the keypad remains capped at 480 CSS pixels.
 - In landscape, fit the board between a wordmark-width non-number column on the
   left and a slightly wider keypad on the right, shifting the board slightly left
@@ -76,6 +76,10 @@ belong on About/Help.
   safe-area spacing only to controls. In nearly square windows, use the
   maximum width between usable side controls. Allow scrolling for short viewports,
   enlarged text, or status messages rather than clipping controls.
+- Windows at least 800px wide and 600px tall use the side-control arrangement
+  regardless of orientation. Center the whole game, cap the board at 540px,
+  keep controls close beside it, and leave at least 24px around the game.
+  Shrink the board as needed to fit; phone-sized windows retain their sizing.
 - Keypad: portrait has 1 3 5 7 9 above centered, staggered 2 4 6 8;
   landscape transposes this into two adjacent staggered columns on the far right,
   odd digits followed by even digits, respecting safe areas.

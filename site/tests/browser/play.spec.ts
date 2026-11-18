@@ -344,10 +344,10 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
 });
-test('portrait fills the width; landscape fits a tall board beside compact bottom-left tools', async ({ page }) => {
+test('phones maximize the board; large windows keep a capped game and visible side controls', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [568, 320], [780, 339], [844, 390], [1024, 768], [768, 1024], [1366, 1024], [1440, 900], [600, 500], [280, 480]]) {
+  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [568, 320], [780, 339], [844, 390], [1024, 768], [768, 1024], [1366, 1024], [1440, 900], [600, 500], [280, 480], [800, 600], [800, 900], [900, 1100], [1200, 1000], [1000, 1000], [2560, 1440]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => scrollTo(0, 0));
     const boxes = await page.locator('#board, .key-row, .tools').evaluateAll(elements => elements.map(e => {
@@ -356,7 +356,8 @@ test('portrait fills the width; landscape fits a tall board beside compact botto
     const pageWidth = await page.evaluate(() => document.documentElement.clientWidth);
     for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(pageWidth + 1); }
     expect(Math.abs(boxes[0].width - boxes[0].height)).toBeLessThan(1);
-    if (width > height) {
+    const desktop = width >= 800 && height >= 600;
+    if (width > height || desktop) {
       for (const box of boxes) expect(box.bottom, `visible at ${width}×${height}`).toBeLessThanOrEqual(height + 1);
       for (const box of boxes.slice(1, 3)) expect(box.x).toBeGreaterThan(boxes[0].right);
       expect(boxes[3].right).toBeLessThan(boxes[0].x);
@@ -364,20 +365,30 @@ test('portrait fills the width; landscape fits a tall board beside compact botto
       const wordmark = (await page.locator('#main .game-wordmark').boundingBox())!;
       const keypad = (await page.locator('.keypad').boundingBox())!;
       const leftEdge = Math.max(wordmark.x + wordmark.width, boxes[3].right) + 8;
-      expect(boxes[0].width).toBeCloseTo(Math.min(height, keypad.x - leftEdge), 0);
+      if (desktop) {
+        expect(boxes[0].width).toBeLessThanOrEqual(540);
+        expect(boxes[0].y).toBeGreaterThanOrEqual(24);
+        expect(boxes[0].y).toBeCloseTo(height - boxes[0].bottom, 0);
+        const app = (await page.locator('#main').boundingBox())!;
+        expect(app.x).toBeGreaterThanOrEqual(24);
+        expect(app.x).toBeCloseTo(width - app.x - app.width, 0);
+        expect(keypad.x - boxes[0].right).toBeLessThanOrEqual(24);
+        expect(boxes[0].x - boxes[3].right).toBeLessThanOrEqual(24);
+      } else {
+        expect(boxes[0].width).toBeCloseTo(Math.min(height, keypad.x - leftEdge), 0);
+      }
       expect(boxes[0].y).toBeGreaterThanOrEqual(0);
       expect(boxes[0].bottom).toBeLessThanOrEqual(height);
-      // The short Settings label may make the block a few pixels wider than
-      // the wordmark, but the left column must not expand into a broad rail.
+      // Keep the tool block close to wordmark width.
       expect(boxes[3].width).toBeLessThanOrEqual(wordmark.width + 10);
-      expect(boxes[3].bottom).toBeCloseTo(height - 8, 0);
+      expect(boxes[3].bottom).toBeCloseTo((desktop ? boxes[0].bottom : height) - 8, 0);
       expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(height + 1);
       const firstOdd = (await page.locator('button[data-digit="1"]').boundingBox())!;
       const secondOdd = (await page.locator('button[data-digit="3"]').boundingBox())!;
       const firstEven = (await page.locator('button[data-digit="2"]').boundingBox())!;
       expect(firstEven.x).toBeCloseTo(firstOdd.x + firstOdd.width + 10, 0);
       expect(firstEven.y).toBeCloseTo((firstOdd.y + secondOdd.y)/2, 0);
-      expect(firstEven.x + firstEven.width).toBeCloseTo(pageWidth - 8, 0);
+      expect(firstEven.x + firstEven.width).toBeCloseTo(keypad.x + keypad.width - 8, 0);
       expect(boxes[3].right).toBeLessThanOrEqual(firstOdd.x);
       for (const selector of ['.game-wordmark', '#difficulty', '.game-metrics']) {
         const box = (await page.locator(`#main ${selector}`).boundingBox())!;
