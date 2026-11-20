@@ -21,7 +21,7 @@ const lobby = Astro.url.pathname === '/';
   <body>
     <main id="main" class="game-app" aria-label="GridZero Sudoku" hidden={lobby}>
       <header class="game-header">
-        <a href="/" class="game-wordmark">GridZero</a>
+        <span class="game-wordmark">GridZero</span>
       </header>
       <div class="metadata">
         <div><strong id="difficulty">Medium</strong><span id="mode">Challenge</span></div>
@@ -68,7 +68,7 @@ const lobby = Astro.url.pathname === '/';
     </dialog>
     <main id="new-dialog" class="lobby" hidden={!lobby} aria-label="New game">
       <header class="dialog-header">
-        <a class="game-wordmark" href="/">GridZero</a>
+        <span class="game-wordmark">GridZero</span>
         <nav class="lobby-links">
           <button id="lobby-settings" type="button" aria-haspopup="dialog">Settings</button>
           <a href="/about/">About</a>

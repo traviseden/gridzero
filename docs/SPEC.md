@@ -35,6 +35,7 @@ belong on About/Help.
   between lobby and board without replacing the saved puzzle.
 - `/about/` contains existing relevant web-app information and links to Help,
   Credits, and Privacy. Informational pages are script-free.
+- The GridZero wordmark links to the lobby only on About; elsewhere it is plain text.
 
 ## Gameplay
 

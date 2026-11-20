@@ -386,3 +386,13 @@ the owner's design decision.
   screenshots are `desktop-*-capped.png` in the existing temporary review folder.
 - Next checkpoint: owner checks the corrected desktop layout at their actual
   window size. Deployment details follow in `docs/GO-LIVE.md`.
+
+## November 19, 2026 — non-interactive GridZero wordmark
+
+- The header wordmark is plain text on every page except About, where it still
+  links to the lobby. Clicking it during play leaves the current board in place.
+- Astro check/build, link validation, 13 core tests, and 52 browser tests passed
+  (four existing WebKit service-worker skips). Chromium and iPhone WebKit both
+  verified the in-game click and About navigation.
+- Owner confirmed release to Cloudflare Pages. See `docs/GO-LIVE.md` for
+  production verification.

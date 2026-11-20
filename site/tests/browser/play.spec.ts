@@ -30,6 +30,28 @@ test('lobby starts the selected game; informational pages stay script-free', asy
   await expect(page.locator('[data-cell]')).toHaveCount(81);
   for (const route of ['/about/', '/privacy/', '/support/', '/credits/']) { await page.goto(route); await expect(page.locator('script')).toHaveCount(0); }
 });
+test('only the About wordmark navigates home', async ({ page }) => {
+  await load(page);
+  await page.locator('[data-cell="2"]').click();
+  await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+  await expect(page.locator('.game-header span.game-wordmark')).toHaveText('GridZero');
+  await page.locator('.game-header .game-wordmark').click();
+  await expect(page).toHaveURL(/\/play\/$/);
+  await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+
+  await page.goto('/');
+  await expect(page.locator('.lobby span.game-wordmark')).toHaveText('GridZero');
+  for (const route of ['/privacy/', '/support/', '/credits/', '/404.html']) {
+    await page.goto(route);
+    await expect(page.locator('.site-header span.wordmark')).toHaveText('GridZero');
+  }
+  await page.goto('/about/');
+  const home = page.getByRole('link', { name: 'GridZero home' });
+  await expect(home).toHaveAttribute('href', '/');
+  await home.click();
+  await expect(page.locator('#new-form')).toBeVisible();
+});
 test('manual notes, undo, correct entries, and persistence', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
   await page.locator('#notes').click(); await page.getByRole('button', { name: 'Toggle note 4', exact: true }).click();
