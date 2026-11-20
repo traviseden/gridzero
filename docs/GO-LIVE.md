@@ -63,3 +63,12 @@ Native releases are retired; their previous gates remain on `walled-garden`.
 - Build, 13 core tests, 50 browser tests, link and whitespace checks passed;
   four existing WebKit service-worker skips remain.
 - Next checkpoint: owner reviews the corrected desktop size in their window.
+
+## November 19, 2026 wordmark fix
+
+- Application commit: `27fabea`, pushed to `main`.
+- Cloudflare Pages deployment: https://fe49dd42.gridzero.pages.dev
+- All 20 served files at https://gridzero.win/ match the verified build.
+- Production iPhone WebKit smoke: tapping the wordmark during play leaves the
+  current board and note intact. The About wordmark still returns to the lobby.
+  No JavaScript errors.
