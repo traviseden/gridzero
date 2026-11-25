@@ -160,7 +160,7 @@ function outcome() {
 function haptic(error = false) { if (preferences.haptics) navigator.vibrate?.(error ? [20, 40, 20] : 8); }
 function entryFeedback(move: Move) {
   errorCell = move.rejected ? move.index : -1;
-  if (move.cue && preferences.sound && !document.hidden) playSound(move.cue);
+  if (move.cue && preferences.sound && !document.hidden) void playSound(move.cue);
   haptic(move.rejected);
 }
 function finishEntry(presentOutcome = true) {

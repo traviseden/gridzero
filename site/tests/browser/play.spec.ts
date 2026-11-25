@@ -242,7 +242,7 @@ test('keyboard support and reduced motion', async ({ page }) => {
   await page.keyboard.press('Control+z'); await expect(page.locator('[data-cell="2"] .value')).toHaveText('');
   await page.keyboard.press('ArrowRight'); await expect(page.locator('[data-cell="3"]')).toHaveAttribute('aria-pressed', 'true');
 });
-test('Challenge sounds are triggered once at arrival, and muting survives reload', async ({ page }) => {
+async function recordTones(page: Page) {
   await page.addInitScript(() => {
     const start = OscillatorNode.prototype.start;
     OscillatorNode.prototype.start = function(when) {
@@ -251,6 +251,23 @@ test('Challenge sounds are triggered once at arrival, and muting survives reload
       start.call(this, when);
     };
   });
+}
+for (const mode of ['classic', 'challenge'] as const) {
+  test(`${mode} plays only the win cue on completion, never on restore`, async ({ page }) => {
+    const game = fixture();
+    game.mode = mode; game.board.values = [...game.puzzle.solution]; game.board.values[2] = 0;
+    if (mode === 'classic') await page.emulateMedia({ reducedMotion: 'reduce' });
+    await recordTones(page); await load(page, game);
+    await page.locator('[data-cell="2"]').click(); await page.keyboard.press('4');
+    await expect(page.locator('#notice-dialog')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-tones', 'triangle,sine,sine,triangle,');
+    await page.reload();
+    await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+    await expect(page.locator('html')).not.toHaveAttribute('data-tones', /./);
+  });
+}
+test('Challenge sounds are triggered once at arrival, and muting survives reload', async ({ page }) => {
+  await recordTones(page);
   await load(page);
   await page.locator('[data-cell="2"]').click();
   await page.keyboard.press('1');

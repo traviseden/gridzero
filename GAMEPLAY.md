@@ -20,7 +20,7 @@ The controller derives these session states from the saved game. Restore can the
 
 ![A committed guess travels. Accepted guesses settle on arrival; rejected guesses recoil before returning to idle.](docs/diagrams/entry.svg)
 
-A filled cell focuses its digit; an empty cell selects an entry target. A valid input commits **before** the 350 ms flight. No second input is accepted until the flight (and, for a rejection, the 450 ms recoil) settles. Challenge cues fire once at arrival; Reduce Motion and notes settle immediately. Notes, Classic, and history changes never play correctness sounds. Rotation or navigation settles the existing move rather than applying it again.
+A filled cell focuses its digit; an empty cell selects an entry target. A valid input commits **before** the 350 ms flight. No second input is accepted until the flight (and, for a rejection, the 450 ms recoil) settles. Challenge cues fire once at arrival; Reduce Motion and notes settle immediately. Finishing either mode plays the “Last tile” win sound instead of an entry sound. Notes, ordinary Classic entries, history changes, and restoring a finished puzzle stay silent. Rotation or navigation settles the existing move rather than applying it again.
 
 ### Opening a dialog
 

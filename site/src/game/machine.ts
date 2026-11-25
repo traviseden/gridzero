@@ -3,7 +3,7 @@ import type { Mode, Puzzle } from './sudoku';
 
 type Screen = 'setup' | 'preparing' | 'board';
 export type Overlay = 'menu' | 'settings' | 'mode-info' | 'notice';
-export type Cue = 'correct' | 'incorrect';
+export type Cue = 'correct' | 'incorrect' | 'win';
 export type Move = { index: number; digit: number; rejected: boolean; cue?: Cue };
 type Entry = { phase: 'idle' } | { phase: 'travelling' | 'recoiling'; move: Move };
 export type Edit = 'undo' | 'redo' | 'erase' | 'fill' | 'notes';
@@ -71,7 +71,8 @@ export class Gameplay {
     const result = enter(this.game, digit, this.selected, this.pencil, cleanup);
     if (result === 'ignored') return;
     const rejected = result === 'strike';
-    const cue = !this.pencil && this.game.mode === 'challenge' ? (rejected ? 'incorrect' : 'correct') : undefined;
+    const cue = result === 'completed' ? 'win'
+      : !this.pencil && this.game.mode === 'challenge' ? (rejected ? 'incorrect' : 'correct') : undefined;
     const move: Move = { digit, index: this.selected, rejected, cue };
     this.entry = { phase: 'travelling', move };
     return move;

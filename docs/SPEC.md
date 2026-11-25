@@ -106,7 +106,8 @@ belong on About/Help.
   B612 digits on the board, notes, keys, and flying entries; system text elsewhere.
 - Challenge guesses play an original rising tone on acceptance or a descending bloop
   on rejection. Sound effects default on and can be muted independently of haptics.
-  Deliver the cue once at arrival or immediate settlement. Notes and Classic stay silent.
+  Deliver the cue once at arrival or immediate settlement. The final move in either
+  mode plays the “Last tile” win cue instead. Notes and ordinary Classic entries stay silent.
 - Ink/Moss/Clay themes; System appearance by default. Scheduled defaults 07:00/19:00
   using the local clock. Timer hidden, haptics on where supported, peer/matching
   highlights on; notes, Fill Notes, and cleanup off by default.
