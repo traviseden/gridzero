@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> None
+    None --> Menu : board
+    None --> Settings : setup
+    None --> ModeInfo : setup
+    None --> Notice : outcome
+    Menu --> Settings : settings
+    Menu --> Notice : check or restart
+    Menu --> None : dismiss or act
+    Settings --> None : dismiss
+    ModeInfo --> None : dismiss
+    Notice --> None : dismiss or act

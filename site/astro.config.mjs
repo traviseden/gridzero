@@ -5,6 +5,7 @@ import qrcode from 'qrcode-terminal';
 export default defineConfig({
   site: 'https://gridzero.win',
   output: 'static',
+  server: { host: true },
   devToolbar: { enabled: false },
   vite: { define: { __GRIDZERO_BUILD__: JSON.stringify(`gridzero-play-${Date.now()}`) } },
   trailingSlash: 'always',

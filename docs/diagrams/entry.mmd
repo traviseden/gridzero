@@ -1,0 +1,6 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Travelling : commit and save
+    Travelling --> Idle : accepted or settled
+    Travelling --> Recoiling : rejected at arrival
+    Recoiling --> Idle : recoil ends or interrupted

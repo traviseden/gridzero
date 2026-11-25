@@ -3,12 +3,12 @@ export interface Preferences {
   theme: 'ink' | 'moss' | 'clay'; appearance: 'system' | 'light' | 'dark' | 'scheduled';
   lightAt: number; darkAt: number; source: Source; difficulty: Difficulty; mode: Mode;
   strikeLimit: number; customEmpty: number; allowAutofill: boolean; cleanupNotes: boolean;
-  highlightPeers: boolean; highlightMatching: boolean; showTimer: boolean; haptics: boolean;
+  highlightPeers: boolean; highlightMatching: boolean; showTimer: boolean; haptics: boolean; sound: boolean;
 }
 export const defaults: Preferences = {
   theme: 'ink', appearance: 'system', lightAt: 420, darkAt: 1140, source: 'collection',
   difficulty: 'medium', mode: 'challenge', strikeLimit: 3, customEmpty: 45, allowAutofill: false,
-  cleanupNotes: false, highlightPeers: true, highlightMatching: true, showTimer: false, haptics: true,
+  cleanupNotes: false, highlightPeers: true, highlightMatching: true, showTimer: false, haptics: true, sound: true,
 };
 export function restorePreferences(value: unknown): Preferences {
   const p = { ...defaults };
@@ -19,7 +19,7 @@ export function restorePreferences(value: unknown): Preferences {
   for (const [key, options] of Object.entries(enums)) {
     if (typeof raw[key] === 'string' && options.includes(raw[key] as string)) Object.assign(p, { [key]: raw[key] });
   }
-  for (const key of ['allowAutofill', 'cleanupNotes', 'highlightPeers', 'highlightMatching', 'showTimer', 'haptics'] as const) {
+  for (const key of ['allowAutofill', 'cleanupNotes', 'highlightPeers', 'highlightMatching', 'showTimer', 'haptics', 'sound'] as const) {
     if (typeof raw[key] === 'boolean') p[key] = raw[key];
   }
   for (const key of ['lightAt', 'darkAt', 'customEmpty'] as const) {

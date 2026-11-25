@@ -12,7 +12,7 @@ Node 24 or newer:
 
 ```sh
 npm --prefix site ci
-npm --prefix site run dev
+npm run dev
 ```
 
 Astro listens on the local network and prints a QR code for the lobby.
@@ -36,6 +36,7 @@ Deploy `site/dist` as a static site. Build command: `npm --prefix site ci && npm
 ## Project
 
 - [Product specification](docs/SPEC.md)
+- [Gameplay and state-machine diagrams](GAMEPLAY.md)
 - [Browser verification and handoff](docs/web-verification.md)
 - [Release checks](docs/GO-LIVE.md)
 - [Puzzle provenance](docs/puzzle-data.md)
