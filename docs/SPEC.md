@@ -44,6 +44,8 @@ belong on About/Help.
 - Number entry on any filled cell is a no-op in either mode: no replacement,
   strike, or history change. Erase an editable filled cell before changing it.
   Erase targets the editable cell explicitly tapped/entered, not every match.
+- Once nine copies of a digit are on the board, its keypad button is disabled
+  and its keyboard shortcut does nothing, including in Notes mode.
 - Challenge rejects wrong entries and adds strikes; default limit 3, configurable
   1–5 for future games. Saved games retain their original limits, including legacy
   unlimited/10. Undo never removes strikes; notes are not solution-checked.

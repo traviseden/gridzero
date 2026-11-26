@@ -62,6 +62,19 @@ test('manual notes, undo, correct entries, and persistence', async ({ page }) =>
   await page.reload(); await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
   expect((await saved(page)).strikes).toBe(0);
 });
+test('nine placed fives disable the 5 button and ignore the 5 key', async ({ page }) => {
+  const game = fixture();
+  game.puzzle.solution.forEach((digit, i) => { if (digit === 5) game.board.values[i] = 5; });
+  await load(page, game);
+  await page.locator('[data-cell="2"]').click();
+  await expect(page.getByRole('button', { name: 'Enter 5', exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Enter 4', exact: true })).toBeEnabled();
+  await page.keyboard.press('5');
+  const after = await saved(page);
+  expect(after.strikes).toBe(0);
+  expect(after.board).toEqual(game.board);
+  expect(after.undoStack).toEqual([]);
+});
 test('wrong numbers reject, strike-out persists, and Continue in Classic unlocks', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
   for (let i = 0; i < 3; i++) {

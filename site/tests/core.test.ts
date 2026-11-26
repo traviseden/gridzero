@@ -68,6 +68,20 @@ test('filled cells ignore number entry without strikes or history changes', () =
     assert.equal(enter(g, 4, 2), 'changed');
   }
 });
+test('a completed digit ignores entries and notes until a copy is removed', () => {
+  for (const mode of ['classic', 'challenge'] as const) {
+    const g = createGame(puzzle(), mode);
+    const missingFives = g.puzzle.solution.flatMap((digit, i) => digit === 5 && !g.board.values[i] ? [i] : []);
+    for (const i of missingFives) assert.equal(enter(g, 5, i), 'changed');
+    const before = structuredClone(g);
+    const empty = g.board.values.indexOf(0);
+    assert.equal(enter(g, 5, empty), 'ignored');
+    assert.equal(enter(g, 5, empty, true), 'ignored');
+    assert.deepEqual(g, before);
+    undo(g);
+    assert.equal(enter(g, 5, missingFives.at(-1)!), 'changed');
+  }
+});
 test('starting digit uses the smallest count and randomizes only tied digits', () => {
   const values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 1, 2, 3, 4, 5, 6, 7];
   assert.equal(leastFilledDigit(values, () => 0), 8);

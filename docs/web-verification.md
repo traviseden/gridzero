@@ -1,5 +1,12 @@
 # Web verification and handoff
 
+## November 26, 2026 — completed digits
+
+- Nine placed copies disable that digit on the keypad and make its keyboard
+  input a no-op. Undoing the ninth placement makes the digit available again.
+- All 14 core tests, the production build, and the completed-digit browser
+  regression on Chromium and iPhone WebKit passed.
+
 ## November 17, 2026 — web-only transition
 
 - Pushed `walled-garden` from committed `main`, before any changes in this session.

@@ -1,4 +1,4 @@
-import { canRedo, canUndo, createGame, enter, erase, fillNotes, isOut, leastFilledDigit, locked, redo, undo, validSave, type Game, type Result } from './game';
+import { canRedo, canUndo, createGame, digitExhausted, enter, erase, fillNotes, isOut, leastFilledDigit, locked, redo, undo, validSave, type Game, type Result } from './game';
 import { choosePuzzle } from './puzzles';
 import { darkAppearance, defaults, restorePreferences, type Preferences } from './preferences';
 import { digits, peers, type Difficulty, type Mode, type Puzzle, type Source } from './sudoku';
@@ -48,7 +48,7 @@ function appearance() {
 const title = (s: string) => s[0].toUpperCase() + s.slice(1);
 const time = (elapsed: number) => `${Math.floor(elapsed / 60)}:${String(Math.floor(elapsed % 60)).padStart(2, '0')}`;
 const canEdit = () => !!game && selected >= 0 && !game.puzzle.givens[selected] && !locked(game);
-const canEnter = () => canEdit() && !game!.board.values[selected];
+const canEnter = (digit: number) => canEdit() && !game!.board.values[selected] && !digitExhausted(game!.board, digit);
 function startingFocus() {
   selected = -1;
   focusedDigit = leastFilledDigit(game!.board.values);
@@ -102,8 +102,7 @@ function render() {
   $('#notes').setAttribute('aria-pressed', String(pencil));
   $('.keypad').classList.toggle('pencil', pencil);
   for (const key of keys) {
-    const d = Number(key.dataset.digit); key.disabled = !canEnter();
-    key.classList.toggle('exhausted', g.board.values.filter(v => v === d).length >= 9);
+    const d = Number(key.dataset.digit); key.disabled = !canEnter(d);
     key.setAttribute('aria-label', `${pencil ? 'Toggle note' : 'Enter'} ${d}`);
   }
   $('[data-action="check"]').hidden = g.mode !== 'classic';
@@ -216,7 +215,7 @@ function animateEntry(digit: number, index: number, result: Result) {
 }
 function canAnimate() { return typeof HTMLElement.prototype.animate === 'function'; }
 function entry(digit: number) {
-  if (!game || !canEnter() || transition.phase !== 'idle') return;
+  if (!game || !canEnter(digit) || transition.phase !== 'idle') return;
   errorCell = -1; feedbackToken++; render();
   checked.clear(); const result = enter(game, digit, selected, pencil, preferences.cleanupNotes);
   if (result === 'ignored') return;
