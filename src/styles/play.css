@@ -73,7 +73,7 @@ dialog .dialog-links a { color:var(--muted); }
 
 /* A wordmark-width left column and a wider keypad flank the largest fitting
    board. Safe-area spacing belongs only to the controls. */
-@media (orientation:landscape) and (min-width:560px), (min-width:800px) and (min-height:600px) {
+@media (min-aspect-ratio:1/1) and (min-width:560px) {
   .game-app {
     --safe-top:env(safe-area-inset-top);
     --safe-bottom:env(safe-area-inset-bottom);
@@ -126,8 +126,8 @@ dialog .dialog-links a { color:var(--muted); }
   .tools button[aria-pressed="true"] { color:var(--accent); border-color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,var(--paper)); }
   .game-status { grid-column:1; grid-row:4; align-self:end; width:0; min-width:100%; padding:0 8px 0 calc(8px + var(--safe-left)); text-align:left; }
 }
-/* Large windows use a bounded game, independent of their orientation. */
-@media (min-width:800px) and (min-height:600px) {
+/* Keep the compact side-control arrangement on wide desktops. */
+@media (min-aspect-ratio:1/1) and (min-width:800px) and (min-height:600px) {
   .game-app {
     --board-size:min(540px,calc(100vw - 346px),calc(100dvh - 48px));
     --keypad-width:154px;
@@ -158,4 +158,74 @@ dialog .dialog-links a { color:var(--muted); }
 @media (orientation:landscape) and (min-width:560px) and (max-height:360px) {
   .lobby { padding-top:calc(12px + env(safe-area-inset-top)); padding-bottom:calc(12px + env(safe-area-inset-bottom)); }
   .lobby .dialog-header { margin-bottom:8px; }
+}
+
+/* The board, keys and setup controls share the same matte playing surface. */
+@font-face {
+  font-family:B612; src:url("/assets/b612-digits.woff2") format("woff2");
+  font-weight:400; font-display:swap; unicode-range:U+0030-0039;
+}
+@font-face {
+  font-family:B612; src:url("/assets/b612-digits-bold.woff2") format("woff2");
+  font-weight:700; font-display:swap; unicode-range:U+0030-0039;
+}
+:root {
+  --table:color-mix(in srgb,var(--ink) 84%,var(--accent));
+  --on-table:var(--paper);
+  --rail-ink:color-mix(in srgb,var(--on-table) 82%,var(--table));
+  --key-edge:color-mix(in srgb,var(--strong-line) 70%,var(--table));
+  font-family:system-ui,sans-serif;
+  background:var(--table);
+}
+:root[data-scheme="dark"] {
+  --table:color-mix(in srgb,var(--paper) 88%,var(--accent));
+  --on-table:var(--ink);
+}
+.game-app,.lobby { color:var(--on-table); }
+.game-wordmark,.lobby #empty-count { color:var(--on-table); font-weight:750; }
+.lobby .game-wordmark { letter-spacing:-.05em; }
+.lobby-links a,.lobby .lobby-links button,.lobby .lobby-links a,
+.lobby label,.lobby #mode-info,#mode,.game-metrics { color:var(--rail-ink); }
+.lobby select,.lobby .primary,.menu-actions button,.notice-actions button {
+  border-radius:6px; border:1px solid var(--key-edge); border-bottom-width:3px;
+}
+.lobby .primary { background:var(--accent); color:var(--paper); border-color:color-mix(in srgb,var(--accent) 55%,black); }
+.lobby .primary:active,.menu-actions button:active,.notice-actions button:active { border-bottom-width:1px; }
+.board { background:var(--paper); border:2px solid var(--strong-line); }
+.cell,.key-row button,.entry-flight { font-family:B612,system-ui,sans-serif; font-weight:400; }
+.cell { font-size:6.65cqw; }
+.cell.given,.key-row button { font-weight:700; }
+.cell.box-right { border-right-width:2px; }
+.cell.box-bottom { border-bottom-width:2px; }
+.cell.matching,.cell.selected { background:color-mix(in srgb,var(--accent) 25%,var(--paper)); }
+.cell.checked,.cell.rejected { background:color-mix(in srgb,var(--error) 18%,var(--paper)); }
+.key-row button {
+  background:var(--paper); color:var(--accent); border:1px solid var(--key-edge);
+  border-bottom-width:4px; border-radius:7px; line-height:1;
+}
+.key-row button:disabled { opacity:1; color:var(--muted); background:var(--surface); }
+.key-row button:active:not(:disabled) { opacity:1; border-bottom-width:1px; }
+.keypad.pencil .key-row button { background:color-mix(in srgb,var(--accent) 15%,var(--paper)); }
+.tools button,.tools #menu-open { color:var(--on-table); border-color:var(--rail-ink); background:transparent; }
+.tools button[aria-pressed="true"] { background:var(--paper); color:var(--accent); }
+.tools button:disabled { opacity:.55; }
+.game-app button:focus-visible,.lobby :focus-visible { outline-color:var(--on-table); }
+.game-app .cell:focus-visible { outline-color:var(--strong-line); }
+.strike { color:var(--rail-ink); }
+.strike.used,.game-app .error,.game-app #save-status,.lobby .error { color:#ffb4ac; }
+.game-status { color:var(--rail-ink); }
+@media (aspect-ratio < 1) and (width > 600px) {
+  /* Keep touch controls below the board. Size the square against both axes;
+     proportional side rails grow with the tablet rather than capping the grid. */
+  .game-app {
+    width:min(calc(100% - clamp(0px, (100vw - 600px) / 5, 7vw)), max(600px, calc(100dvh - 19rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))));
+    margin-inline:auto;
+    display:grid; grid-template-columns:auto 1fr 44px; align-content:start;
+    gap:12px 20px; padding-top:calc(16px + env(safe-area-inset-top));
+  }
+  .game-header,.metadata { grid-row:1; padding-inline:0; }
+  .metadata { grid-column:2; }
+  .board,.keypad,.tools,.game-status { grid-column:1/-1; justify-self:center; }
+  .tools #menu-open { right:0; top:calc(16px + env(safe-area-inset-top)); }
+  .key-row button { height:56px; }
 }

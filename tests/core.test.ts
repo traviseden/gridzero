@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { createGame, enter, erase, fillNotes, undo, redo, isOut, leastFilledDigit, validSave } from '../src/game/game';
 import { all, candidates, complete, consistent, generate, grade, peers, solutions, type Puzzle } from '../src/game/sudoku';
 import { darkAppearance, defaults, restorePreferences } from '../src/game/preferences';
+import { Gameplay } from '../src/game/machine';
 
 const example = [...'530070000600195000098000060800060003400803001700020006060000280000419005000080079'].map(Number);
 const puzzle = (): Puzzle => ({ id: 'test', givens: [...example], solution: solutions(example, 1)[0], difficulty: 'easy', source: 'collection' });
@@ -99,10 +100,45 @@ test('save validation rejects malformed board, notes, history, rules, and soluti
     (x: typeof g) => { x.board.values[0] = 0; },
     (x: typeof g) => { x.elapsed = -1; },
     (x: typeof g) => { x.undoStack = Array(301).fill(x.board); },
-    (x: typeof g) => { x.strikeLimit = 2; },
+    (x: typeof g) => { x.strikeLimit = 6; },
     (x: typeof g) => { x.finished = true; },
   ]) { const x = structuredClone(g); mutate(x); assert.equal(validSave(x), false); }
   assert.equal(validSave(null), false); assert.equal(validSave({}), false);
+  for (const strikeLimit of [0, 1, 2, 3, 4, 5, 10]) assert.ok(validSave({ ...g, strikeLimit }));
+});
+test('only the current preparation can replace a saved game', () => {
+  const flow = new Gameplay(), old = createGame(puzzle());
+  flow.restore(old);
+  const stale = flow.prepare()!;
+  flow.cancel();
+  const current = flow.prepare()!;
+  assert.equal(flow.install(stale, puzzle(), 'classic', 4), false);
+  assert.equal(flow.game, old);
+  assert.equal(flow.install(current, puzzle(), 'classic', 4), true);
+  assert.equal(flow.session, 'classic'); assert.ok(flow.ready);
+});
+test('feedback is exactly once per Challenge guess, including interrupted strikes', () => {
+  const flow = new Gameplay();
+  flow.install(flow.prepare()!, puzzle(), 'challenge', 1);
+  flow.select(2);
+  flow.open('settings');
+  assert.equal(flow.guess(4, false), undefined); assert.equal(flow.playing, false);
+  flow.close('settings');
+  flow.edit('notes'); assert.equal(flow.settle(flow.guess(4, false)!)?.cue, undefined);
+  flow.edit('notes');
+  const accepted = flow.guess(4, false)!;
+  assert.equal(flow.edit('undo'), false);
+  assert.equal(flow.settle(accepted)?.cue, 'correct');
+  assert.equal(flow.arrive(accepted), undefined);
+  flow.select(3);
+  const strike = flow.guess(1, false)!;
+  assert.equal(flow.guess(1, false), undefined);
+  assert.equal(flow.arrive(strike)?.cue, 'incorrect');
+  assert.equal(flow.settle(strike), undefined);
+  assert.equal(flow.session, 'struck-out'); assert.equal(flow.game!.strikes, 1);
+  flow.continueClassic();
+  assert.equal(flow.settle(flow.guess(1, false)!)?.cue, undefined);
+  assert.equal(flow.game!.board.values[3], 1);
 });
 test('all 8,000 collection puzzles have unique solutions and retained ratings', () => {
   const text = readFileSync(new URL('../src/data/puzzles.txt', import.meta.url), 'utf8');

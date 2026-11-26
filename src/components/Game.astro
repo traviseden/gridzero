@@ -9,7 +9,7 @@ const lobby = Astro.url.pathname === '/';
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#faf9f5" />
+    <meta name="theme-color" content="#273440" />
     <meta name="gridzero-build" content={__GRIDZERO_BUILD__} />
     <meta name="description" content="Play GridZero Sudoku. Challenge or Classic, pencil notes, 8,000 puzzles, and zero distractions. Free, private, and offline-ready." />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
@@ -123,7 +123,8 @@ const lobby = Astro.url.pathname === '/';
           <label class="toggle">Highlight related cells<input name="highlightPeers" type="checkbox" checked /></label>
           <label class="toggle">Highlight matching numbers<input name="highlightMatching" type="checkbox" checked /></label>
           <label class="toggle">Show timer<input name="showTimer" type="checkbox" /></label>
-          <label class="toggle">Gentle haptics<input name="haptics" type="checkbox" checked /></label>
+           <label class="toggle">Gentle haptics<input name="haptics" type="checkbox" checked /></label>
+           <label class="toggle">Sound effects<input name="sound" type="checkbox" checked /></label>
         </fieldset>
         <nav class="dialog-links"><a href="/support/">Help</a><a href="/privacy/">Privacy</a><a href="/credits/">Credits &amp; licenses</a><a href="https://github.com/traviseden/gridzero">Source</a></nav>
       </form>

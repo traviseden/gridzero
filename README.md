@@ -35,6 +35,7 @@ Deploy `dist/` as a static site. Build command: `npm ci && npm run build`.
 ## Project
 
 - [Product specification](docs/SPEC.md)
+- [Gameplay and state-machine diagrams](GAMEPLAY.md)
 - [Browser verification and handoff](docs/web-verification.md)
 - [Release checks](docs/GO-LIVE.md)
 - [Puzzle provenance](docs/puzzle-data.md)

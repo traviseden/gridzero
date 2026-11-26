@@ -1,6 +1,6 @@
 # GridZero web product specification
 
-**Version 2 · November 17, 2026**
+**Version 3 · November 25, 2026**
 
 ## Product and interface
 
@@ -15,6 +15,8 @@ belong on About/Help.
 
 - `/` is the lobby: GridZero, Settings and About, existing puzzle controls, and Play.
   Settings opens the same preferences dialog without starting a puzzle.
+- Lobby and board are two states of the same game shell; URLs preserve history,
+  bookmarks, and installed-app identity. See the [gameplay machines](../GAMEPLAY.md).
 - Controls: difficulty, custom empty count when applicable, mode with info button,
   and source. Defaults: Medium / Challenge / Collection / 45 custom empty cells.
 - Visiting the lobby does not start or replace a puzzle. Play installs a puzzle
@@ -73,14 +75,17 @@ belong on About/Help.
 
 - On portrait phones, the square board fills the page width. Tools and keypad follow
   below; the keypad remains capped at 480 CSS pixels.
+- Above 600px in portrait, grow the board fluidly with the viewport and available
+  height. Allow modest side margins, keep the keypad below, and share one header
+  row between the wordmark, status, and menu. There is no fixed board maximum.
 - In landscape, fit the board between a wordmark-width non-number column on the
   left and a slightly wider keypad on the right, shifting the board slightly left
   of exact center. Maximize its square size with no top/bottom inset; apply
   safe-area spacing only to controls. In nearly square windows, use the
   maximum width between usable side controls. Allow scrolling for short viewports,
   enlarged text, or status messages rather than clipping controls.
-- Windows at least 800px wide and 600px tall use the side-control arrangement
-  regardless of orientation. Center the whole game, cap the board at 540px,
+- Square or landscape windows at least 800px wide and 600px tall use the side-control
+  arrangement. Center the whole game, cap the board at 540px,
   keep controls close beside it, and leave at least 24px around the game.
   Shrink the board as needed to fit; phone-sized windows retain their sizing.
 - Keypad: portrait has 1 3 5 7 9 above centered, staggered 2 4 6 8;
@@ -92,13 +97,19 @@ belong on About/Help.
   top left, Notes top right, Undo bottom left, Erase bottom right.
   Menu: New game, Settings, Classic-only Check
   Board, opt-in Fill Notes, Redo, Restart.
-- The landscape tool block uses outlined buttons, paper showing through, and
-  ink-colored icons/text. Active Notes remains distinct. Cell selection/matching
+- The landscape tool block uses outlined buttons with the matte table showing
+  through and contrasting icons. Active Notes remains distinct. Cell selection/matching
   uses filled highlights; keyboard focus retains a visible outline.
 - The game-menu control uses a gear, circular in portrait and matching the other
   square tool buttons in landscape. All four controls use larger, label-free
   icons with accessible names.
 - Show difficulty, mode, Challenge strikes, and optional timer. Small limits use Xs.
+- Set the board and tactile number keys on a matte surround. Use locally bundled
+  B612 digits on the board, notes, keys, and flying entries; system text elsewhere.
+- Challenge guesses play an original rising tone on acceptance or a descending bloop
+  on rejection. Sound effects default on and can be muted independently of haptics.
+  Deliver the cue once at arrival or immediate settlement. The final move in either
+  mode plays the “Last tile” win cue instead. Notes and ordinary Classic entries stay silent.
 - Ink/Moss/Clay themes; System appearance by default. Scheduled defaults 07:00/19:00
   using the local clock. Timer hidden, haptics on where supported, peer/matching
   highlights on; notes, Fill Notes, and cleanup off by default.

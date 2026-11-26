@@ -52,7 +52,7 @@ export function validSave(value: unknown): value is Game {
   if (!p || typeof p.id !== 'string' || !['easy', 'medium', 'hard', 'expert', 'custom'].includes(p.difficulty) ||
       !['collection', 'generated'].includes(p.source) || !['challenge', 'classic'].includes(g.mode) ||
       !complete(p.solution) || !consistent(p.givens) || !p.givens.every((v, i) => !v || v === p.solution[i]) ||
-      !Number.isInteger(g.strikes) || g.strikes < 0 || !Number.isInteger(g.strikeLimit) || ![0, 3, 5, 10].includes(g.strikeLimit) ||
+      !Number.isInteger(g.strikes) || g.strikes < 0 || !Number.isInteger(g.strikeLimit) || ![0, 1, 2, 3, 4, 5, 10].includes(g.strikeLimit) ||
       !Number.isFinite(g.elapsed) || g.elapsed < 0 || typeof g.finished !== 'boolean' ||
       !Array.isArray(g.undoStack) || !Array.isArray(g.redoStack) || g.undoStack.length > 300 || g.redoStack.length > 300) return false;
   const valid = (b: Board) => b && Array.isArray(b.values) && Array.isArray(b.notes) && b.values.length === 81 && b.notes.length === 81 &&

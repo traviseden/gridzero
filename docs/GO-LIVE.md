@@ -73,6 +73,18 @@ Native releases are retired; their previous gates remain on `walled-garden`.
   current board and note intact. The About wordmark still returns to the lobby.
   No JavaScript errors.
 
+## November 25, 2026 — tabletop gameplay and Last tile
+
+- Released application commit `2be9fae` from `tabletop-gameplay` to the existing
+  Pages production environment by direct upload. Deployment:
+  https://113b8695.gridzero.pages.dev/ · Production: https://gridzero.win/
+- All 23 public production files matched the checked build byte-for-byte.
+  A fresh WebKit session completed a Classic board with Reduce Motion and
+  verified that the win cue's four tones started once alongside the completion actions.
+- Build and link checks passed; 15 core and 58 browser tests passed, with the
+  four existing WebKit service-worker skips. Next physical check: hear the final
+  harmony on the iPad and confirm the installed app updates with its save intact.
+
 ## November 26, 2026 — completed digits and root app layout
 
 - Deployed `76fec7d` from `main`, including the completed-digit fix `2283128`,

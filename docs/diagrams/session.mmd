@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Challenge : start challenge
+    [*] --> Classic : start classic
+    Challenge --> StruckOut : final strike
+    StruckOut --> Challenge : retry same puzzle
+    StruckOut --> Classic : keep progress
+    Challenge --> Completed : valid full board
+    Classic --> Completed : valid full board
+    Completed --> Completed : admire

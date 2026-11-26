@@ -1,5 +1,14 @@
 # Web verification and handoff
 
+## November 26, 2026 — tabletop and completed digits together
+
+- Merged the previously released `tabletop-gameplay` branch into root-layout
+  `main`. The tabletop controller ignores exhausted digits before scheduling
+  feedback, and the keypad disables the corresponding buttons.
+- Verified the production build, links, diagram generation, 16 core tests and
+  60 browser tests, including tabletop fonts, responsive layout, the win cue in
+  both modes, and completed-digit input. Four WebKit service-worker tests skipped.
+
 ## November 26, 2026 — app moved to the repository root
 
 - The Astro app now uses top-level `src/`, `public/`, and `tests/`. Run
@@ -413,3 +422,24 @@ the owner's design decision.
   verified the in-game click and About navigation.
 - Owner confirmed release to Cloudflare Pages. See `docs/GO-LIVE.md` for
   production verification.
+
+## November 25, 2026 — tabletop game and gameplay machines (local)
+
+- The shared lobby/board shell now drives the screen, session, entry, and overlay
+  transitions through `src/game/machine.ts`. The v1 save format is unchanged;
+  saves with strike limits 1, 2, or 4 now restore as well. `GAMEPLAY.md` embeds
+  four Pele SVGs with their `.mmd` sources in `docs/diagrams/`.
+- Matte table, locally bundled B612 numerals, pressed keys, and two synthesized
+  Challenge cues. Sound defaults on and is separate from haptics. Portrait tablet
+  grids now size against both viewport axes instead of the 540px landscape cap.
+- Ran Astro check/build, link checks, 15 core tests, and Chromium/WebKit:
+  54 browser tests passed, four WebKit service-worker cases skipped. Coverage
+  includes offline font loading, once-only sound after an interrupted strike,
+  mute persistence, and portrait controls at 768×1024, 834×1194, and 1024×1366.
+  Game JS/CSS (gzip) plus both WOFF2 files increased by 7,303 bytes against the
+  previous build. The existing collection chunk still triggers Vite's size notice.
+- Verified the root `npm run dev` entry point binds on the LAN and emits a QR
+  code; the smoke-test server was stopped. Next owner checkpoint: scan the QR
+  from the iPad, check the portrait board and pencil marks at normal distance,
+  and listen to a few correct/incorrect guesses in succession. Physical-device
+  PWA/offline/update checks remain separate HTTPS release gates.

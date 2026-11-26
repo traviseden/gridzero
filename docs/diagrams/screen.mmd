@@ -1,0 +1,7 @@
+stateDiagram-v2
+    [*] --> Setup
+    Setup --> Preparing : Play
+    Preparing --> Setup : cancel or failure
+    Preparing --> Board : install current puzzle
+    Setup --> Board : restore saved board
+    Board --> Setup : new game or history

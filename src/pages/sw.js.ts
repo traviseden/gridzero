@@ -4,6 +4,7 @@ const version = __GRIDZERO_BUILD__;
 export const GET: APIRoute = () => new Response(`
 const CACHE = ${JSON.stringify(version)};
 const CORE = ['/', '/play/', '/about/', '/privacy/', '/support/', '/credits/', '/assets/Puzzle-LICENSE.txt', '/assets/mark.svg', '/assets/apple-touch-icon.png', '/assets/icon-192.png', '/assets/icon-512.png', '/manifest.webmanifest'];
+CORE.push('/assets/b612-digits.woff2', '/assets/b612-digits-bold.woff2', '/assets/B612-OFL.txt');
 self.addEventListener('install', event => event.waitUntil((async () => {
   const cache = await caches.open(CACHE);
   try {

@@ -255,6 +255,50 @@ test('keyboard support and reduced motion', async ({ page }) => {
   await page.keyboard.press('Control+z'); await expect(page.locator('[data-cell="2"] .value')).toHaveText('');
   await page.keyboard.press('ArrowRight'); await expect(page.locator('[data-cell="3"]')).toHaveAttribute('aria-pressed', 'true');
 });
+async function recordTones(page: Page) {
+  await page.addInitScript(() => {
+    const start = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function(when) {
+      const root = document.documentElement;
+      root.dataset.tones = (root.dataset.tones || '') + `${this.type},`;
+      start.call(this, when);
+    };
+  });
+}
+for (const mode of ['classic', 'challenge'] as const) {
+  test(`${mode} plays only the win cue on completion, never on restore`, async ({ page }) => {
+    const game = fixture();
+    game.mode = mode; game.board.values = [...game.puzzle.solution]; game.board.values[2] = 0;
+    if (mode === 'classic') await page.emulateMedia({ reducedMotion: 'reduce' });
+    await recordTones(page); await load(page, game);
+    await page.locator('[data-cell="2"]').click(); await page.keyboard.press('4');
+    await expect(page.locator('#notice-dialog')).toBeVisible();
+    await expect(page.locator('html')).toHaveAttribute('data-tones', 'triangle,sine,sine,triangle,');
+    await page.reload();
+    await expect(page.locator('[data-cell="2"] .value')).toHaveText('4');
+    await expect(page.locator('html')).not.toHaveAttribute('data-tones', /./);
+  });
+}
+test('Challenge sounds are triggered once at arrival, and muting survives reload', async ({ page }) => {
+  await recordTones(page);
+  await load(page);
+  await page.locator('[data-cell="2"]').click();
+  await page.keyboard.press('1');
+  await expect(page.locator('html')).not.toHaveAttribute('data-tones', /sine/);
+  await expect(page.locator('html')).toHaveAttribute('data-tones', 'sine,');
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await expect(page.locator('#main')).toHaveAttribute('data-entry-phase', 'idle');
+  await page.keyboard.press('4');
+  await expect(page.locator('html')).toHaveAttribute('data-tones', 'sine,triangle,sine,');
+  await menu(page, 'settings');
+  await page.getByLabel('Sound effects').uncheck();
+  await page.reload(); await menu(page, 'settings');
+  await expect(page.getByLabel('Sound effects')).not.toBeChecked();
+  await page.locator('#settings-dialog [data-close]').click();
+  await page.locator('[data-cell="3"]').click(); await page.keyboard.press('6');
+  await expect(page.locator('[data-cell="3"] .value')).toHaveText('6');
+  await expect(page.locator('html')).not.toHaveAttribute('data-tones', /./);
+});
 test('entry transitions serialize rapid input and show strikes at arrival', async ({ page }) => {
   await load(page); await page.locator('[data-cell="2"]').click();
   await page.getByRole('button', { name: 'Enter 4', exact: true }).click();
@@ -369,6 +413,10 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await expect.poll(() => page.evaluate(() => !!navigator.serviceWorker.controller)).toBe(true);
   await context.setOffline(true); await page.reload();
   await expect(page.locator('[data-cell]')).toHaveCount(81);
+  expect(await page.evaluate(async () => {
+    const faces = await Promise.all([400, 700].map(w => document.fonts.load(`${w} 20px B612`, '123')));
+    return faces.every(([face]) => face?.status === 'loaded');
+  })).toBe(true);
   await menu(page, 'new');
   await page.reload();
   await expect(page.locator('#new-dialog')).toBeVisible();
@@ -379,10 +427,10 @@ test('offline reload includes the collection and generator worker', async ({ pag
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect(page.locator('#new-dialog')).not.toBeVisible();
 });
-test('phones maximize the board; large windows keep a capped game and visible side controls', async ({ page }) => {
+test('portrait grids grow with the tablet; wide windows keep visible side controls', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Play', exact: true }).click();
-  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [568, 320], [780, 339], [844, 390], [1024, 768], [768, 1024], [1366, 1024], [1440, 900], [600, 500], [280, 480], [800, 600], [800, 900], [900, 1100], [1200, 1000], [1000, 1000], [2560, 1440]]) {
+  for (const [width, height] of [[320, 568], [375, 667], [390, 664], [430, 740], [390, 844], [430, 932], [568, 320], [780, 339], [844, 390], [1024, 768], [768, 1024], [834, 1194], [1024, 1366], [1366, 1024], [1440, 900], [600, 500], [280, 480], [800, 600], [800, 900], [900, 1100], [1200, 1000], [1000, 1000], [2560, 1440]]) {
     await page.setViewportSize({ width, height });
     await page.evaluate(() => scrollTo(0, 0));
     const boxes = await page.locator('#board, .key-row, .tools').evaluateAll(elements => elements.map(e => {
@@ -392,7 +440,7 @@ test('phones maximize the board; large windows keep a capped game and visible si
     for (const box of boxes) { expect(box.x).toBeGreaterThanOrEqual(-1); expect(box.y).toBeGreaterThanOrEqual(0); expect(box.right).toBeLessThanOrEqual(pageWidth + 1); }
     expect(Math.abs(boxes[0].width - boxes[0].height)).toBeLessThan(1);
     const desktop = width >= 800 && height >= 600;
-    if (width > height || desktop) {
+    if (width >= height) {
       for (const box of boxes) expect(box.bottom, `visible at ${width}×${height}`).toBeLessThanOrEqual(height + 1);
       for (const box of boxes.slice(1, 3)) expect(box.x).toBeGreaterThan(boxes[0].right);
       expect(boxes[3].right).toBeLessThan(boxes[0].x);
@@ -450,8 +498,14 @@ test('phones maximize the board; large windows keep a capped game and visible si
         expect(box.height).toBeGreaterThanOrEqual(44);
       }
     } else {
-      expect(boxes[0].x).toBe(0);
-      expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(pageWidth);
+      if (width <= 600) {
+        expect(boxes[0].x).toBe(0);
+        expect(boxes[0].width, `full-width board at ${width}×${height}`).toBe(pageWidth);
+      } else {
+        expect(boxes[0].width).toBeGreaterThanOrEqual(Math.min(width * .9, height - 310));
+        expect(boxes[0].x).toBeCloseTo(pageWidth - boxes[0].right, 0);
+        expect(boxes[3].bottom).toBeLessThanOrEqual(height + 1);
+      }
       expect(boxes[1].y).toBeGreaterThanOrEqual(boxes[0].bottom);
       expect(boxes[3].y).toBeGreaterThanOrEqual(boxes[2].bottom);
     }
