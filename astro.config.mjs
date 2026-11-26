@@ -13,9 +13,11 @@ export default defineConfig({
     name: 'lan-qr',
     hooks: {
       'astro:server:start': ({ address }) => {
-        const hosts = new Set(Object.values(networkInterfaces()).flat()
-          .filter(info => info && info.family === 'IPv4' && !info.internal)
-          .map(info => info.address));
+        const hosts = new Set(Object.entries(networkInterfaces())
+          .filter(([name]) => !/^utun\d+$/.test(name))
+          .flatMap(([, addresses]) => (addresses ?? [])
+            .filter(info => info.family === 'IPv4' && !info.internal)
+            .map(info => info.address)));
         for (const host of hosts) {
           const url = `http://${host}:${address.port}/`;
           console.log(`\nScan on the same Wi-Fi: ${url}`);

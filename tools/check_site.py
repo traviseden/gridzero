@@ -4,7 +4,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
-ROOT = Path(__file__).resolve().parents[1] / "site" / "dist"
+ROOT = Path(__file__).resolve().parents[1] / "dist"
 VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"}
 
 class Check(HTMLParser):
@@ -42,7 +42,7 @@ class Check(HTMLParser):
     def handle_endtag(self, tag):
         assert self.stack and self.stack.pop() == tag, f"Unbalanced {tag}: {self.file}"
 
-assert (ROOT / "play" / "index.html").is_file(), "Run npm --prefix site run build first"
+assert (ROOT / "play" / "index.html").is_file(), "Run npm run build first"
 for file in ROOT.rglob("*.html"):
     parser = Check(file)
     parser.feed(file.read_text())

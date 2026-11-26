@@ -119,7 +119,7 @@ belong on About/Help.
 
 ## Collection and generation
 
-`site/src/data/puzzles.txt` is the canonical 8,000-puzzle resource: 2,000 each of
+`src/data/puzzles.txt` is the canonical 8,000-puzzle resource: 2,000 each of
 Easy, Medium, Hard, Expert. Format: `difficulty id 81-digit-board rating`.
 `collection.json` records version, upstream revision, counts, bytes, and SHA-256.
 Importer: `tools/import_puzzles.py`. Preserve IDs, published ratings, and licenses.

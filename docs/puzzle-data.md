@@ -42,14 +42,14 @@ exactly one solution with a bounded independent solver. It verifies the entire
 selection before replacing generated files.
 
 The canonical text resource is **840,000 bytes (840 KB decimal)**.
-`site/src/data/collection.json` records counts,
+`src/data/collection.json` records counts,
 revision, selection, source, license, byte size, and SHA-256:
 
 `322af3981362ac873c3f8a9f930c47e56482f6d3aaa664309b9ffd64e796863d`
 
 The upstream license is retained in
-`site/src/data/Puzzle-LICENSE.txt`; the public copy with source
-credit is `site/public/assets/Puzzle-LICENSE.txt`. Astro imports puzzles at build time.
+`src/data/Puzzle-LICENSE.txt`; the public copy with source
+credit is `public/assets/Puzzle-LICENSE.txt`. Astro imports puzzles at build time.
 Bundle size is a tradeoff we accept for offline access, not a 400-board cap.
 
 Credits are available on `/credits/`, linked from About, the informational footer,

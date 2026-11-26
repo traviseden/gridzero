@@ -9,5 +9,5 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'iphone-webkit', use: { ...devices['iPhone 13'], browserName: 'webkit' } },
   ],
-  webServer: { command: 'python3 ../tools/serve_site.py', url: 'http://127.0.0.1:4322', reuseExistingServer: !process.env.CI },
+  webServer: { command: 'python3 tools/serve_site.py', url: 'http://127.0.0.1:4322', reuseExistingServer: !process.env.CI },
 });

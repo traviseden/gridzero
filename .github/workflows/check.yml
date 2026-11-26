@@ -19,13 +19,8 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci
-        working-directory: site
       - run: npm test
-        working-directory: site
       - run: npm run build
-        working-directory: site
       - run: python3 tools/check_site.py
       - run: npx playwright install --with-deps chromium webkit
-        working-directory: site
       - run: npm run test:ui
-        working-directory: site

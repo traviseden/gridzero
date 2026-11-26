@@ -19,9 +19,8 @@ android/env.local.sh
 *.jks
 *.ipa
 *.xcarchive
-site/node_modules/
-site/dist/
-site/.astro/
+/node_modules/
+/dist/
 .astro/
-site/test-results/
-site/playwright-report/
+/test-results/
+/playwright-report/

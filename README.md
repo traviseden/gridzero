@@ -11,27 +11,26 @@ installation, and offline information.
 Node 24 or newer:
 
 ```sh
-npm --prefix site ci
-npm --prefix site run dev
+npm ci
+npm run dev
 ```
 
 Astro listens on the local network and prints a QR code for the lobby.
 Connect phones to the same Wi-Fi for live updates. If Astro starts in background
-mode, `cd site && npx astro dev logs` shows the QR; `npx astro dev stop` stops it.
+mode, `npx astro dev logs` shows the QR; `npx astro dev stop` stops it.
 HTTPS is required for physical-device offline/PWA testing.
 
 ## Checks
 
 ```sh
-npm --prefix site test
-npm --prefix site run build
+npm test
+npm run build
 python3 tools/check_site.py
-cd site
 npx playwright install chromium webkit
 npm run test:ui
 ```
 
-Deploy `site/dist` as a static site. Build command: `npm --prefix site ci && npm --prefix site run build`.
+Deploy `dist/` as a static site. Build command: `npm ci && npm run build`.
 
 ## Project
 
@@ -40,7 +39,7 @@ Deploy `site/dist` as a static site. Build command: `npm --prefix site ci && npm
 - [Release checks](docs/GO-LIVE.md)
 - [Puzzle provenance](docs/puzzle-data.md)
 
-The 8,000-puzzle collection lives in `site/src/data/` and is imported at build
+The 8,000-puzzle collection lives in `src/data/` and is imported at build
 time. Code and original artwork are MIT licensed; puzzle data is public domain.
 
 The retired iOS and Android implementations are preserved on the

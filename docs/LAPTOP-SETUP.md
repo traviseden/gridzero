@@ -3,8 +3,8 @@
 Install Node 24+, clone this repository, and run:
 
 ```sh
-npm --prefix site ci
-npm --prefix site run dev
+npm ci
+npm run dev
 ```
 
 Use the printed LAN URL or QR code on phones connected to the same Wi-Fi.

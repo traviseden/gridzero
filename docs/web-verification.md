@@ -1,5 +1,16 @@
 # Web verification and handoff
 
+## November 26, 2026 — app moved to the repository root
+
+- The Astro app now uses top-level `src/`, `public/`, and `tests/`. Run
+  `npm run dev` from the repository root; a production build writes to `dist/`.
+- Verified the lobby on a temporary root dev server, then stopped it. The build,
+  link checks, 14 core tests and 54 browser tests passed; four WebKit tests skipped.
+- Dev startup now omits macOS `utun` VPN interfaces from its Wi-Fi QR codes.
+  Confirmed foreground `npm run dev` prints the Wi-Fi QR and Play opens the
+  board in Chromium over localhost and iPhone-emulated WebKit over the Mac's
+  Wi-Fi IP. Access from a separate physical phone remains unverified.
+
 ## November 26, 2026 — completed digits
 
 - Nine placed copies disable that digit on the keypad and make its keyboard
@@ -34,16 +45,15 @@
 ## Run checks
 
 ```sh
-npm --prefix site ci
-npm --prefix site test
-npm --prefix site run build
+npm ci
+npm test
+npm run build
 python3 tools/check_site.py
-cd site
 npx playwright install chromium webkit
 npm run test:ui
 ```
 
-Browser tests serve `site/dist` using `tools/serve_site.py` with the production
+Browser tests serve `dist/` using `tools/serve_site.py` with the production
 security headers. Chromium and iPhone WebKit cover selection, modes, settings,
 generation/cancellation, notes/history, persistence, completion navigation,
 keyboard/Reduce Motion, and responsive layout. Core tests verify all 8,000 puzzle
@@ -85,7 +95,7 @@ so visual, keyboard, and screen-reader order agree.
 - Next: owner judges animation pacing and lobby appearance on physical phones.
 
 Follow-up: travel shortened to 450ms at the owner's request; recoil remains
-450ms. Astro's development toolbar is disabled in `site/astro.config.mjs`.
+450ms. Astro's development toolbar is disabled in `astro.config.mjs`.
 
 Latest pacing adjustment: travel is 350ms; recoil remains 450ms.
 
@@ -143,9 +153,9 @@ See `GO-LIVE.md` for deployment details and remaining physical-device checks.
 
 ## Local network development
 
-`npm --prefix site run dev` listens on the LAN and prints a lobby QR code for
-external IPv4 addresses. Connect phones to the same Wi-Fi. Astro reloads edits.
-If Astro starts in background mode, `cd site && npx astro dev logs` shows the QR;
+`npm run dev` listens on the LAN and prints a lobby QR code for
+external IPv4 addresses except macOS VPN tunnels. Connect phones to the same Wi-Fi. Astro reloads edits.
+If Astro starts in background mode, `npx astro dev logs` shows the QR;
 `npx astro dev stop` stops it.
 
 Plain LAN HTTP supports gameplay/layout tests. Physical-device PWA/offline testing

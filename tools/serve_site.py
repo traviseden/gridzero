@@ -6,7 +6,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
-ROOT = Path(__file__).resolve().parents[1] / "site" / "dist"
+ROOT = Path(__file__).resolve().parents[1] / "dist"
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--port", type=int, default=4322)
 parser.add_argument("--host", default="127.0.0.1")
