@@ -72,3 +72,13 @@ Native releases are retired; their previous gates remain on `walled-garden`.
 - Production iPhone WebKit smoke: tapping the wordmark during play leaves the
   current board and note intact. The About wordmark still returns to the lobby.
   No JavaScript errors.
+
+## November 26, 2026 — completed digits and root app layout
+
+- Deployed `76fec7d` from `main`, including the completed-digit fix `2283128`,
+  to https://33562cb0.gridzero.pages.dev. All 20 files served at
+  https://gridzero.win/ match the verified root `dist/` build.
+- Live iPhone-emulated WebKit opened the lobby, started a puzzle, and confirmed
+  that with nine fives on the board the 5 button is disabled and the 5 key adds
+  no strike. Local checks: 14 core tests and 54 browser tests passed, four
+  WebKit skips; build and link checks passed.
